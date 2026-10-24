@@ -14,7 +14,7 @@
 - [video→팀] `scope.md`에 P1로 넣은 "실시간 AI 통역"(양방향 자막·음성)의 우선순위와 `demo-scenario.md` 장면 4 반영 여부 확인 (video.md §6)
 - [video→H1] `consultations`에 `notes_ja text`, `notes_ja_source text`, `notes_translation_status text check (in ('pending','done','failed'))`(모두 nullable) 추가 — 화상 앱 서버가 소견 일본어 번역을 저장하기 위해 (video-integration.md §6)
 - [video→H1] `docs/architecture.md` `photos` 설명과 `202610241800` 마이그레이션 주석의 "재전송은 upsert로 덮어씀"을 "통화 촬영은 회차 3장 일괄 저장, 같은 회차 재제출은 변경 없음"으로 고쳐 주세요 (video-integration.md §4)
-- [video→H3] 소견 저장 직후 콘솔 화면(브라우저)에서 `POST {VIDEO_BASE}/api/opinion/translate {consultationId}` 호출 + 번역 상태 표시 + 최신이 아니면 [다시 번역] (video-integration.md §6)
+- [video→H3] 소견 저장 직후 콘솔 화면(브라우저)에서 `POST /api/opinion/translate {consultationId}`(같은 앱) 호출 + 번역 상태 표시 + 최신이 아니면 [다시 번역] (video-integration.md §6)
 - [video→H4] 환자 견적 "医師の所見": 번역이 최신일 때만(`status=done` 그리고 `notes_ja_source = notes`) `notes_ja` + 「自動翻訳」 + [原文を見る], 아니면 원문 + 「翻訳を準備中です」, 한국어 화면은 원문 (video-integration.md §6)
 - [video→H4] 의원 사후관리 비교 기준 사진: 그 진료의 `source = call` 최신 회차 정면 사진을 먼저 쓰고, 없으면 지금 방식(사전 사진) — 표준 사진으로 경과를 비교하기 위해. 통화 사진에는 `intake_id`도 채운다 (video.md §5.6)
 - [video→H3] 입장 전 점검 화면 제안 수락 — video가 시간이 남으면 `/check`를 만든다. 생기면 알릴 테니 그때 버튼을 붙여 주세요 (video-integration.md §5)

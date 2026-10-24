@@ -11,7 +11,7 @@
 - 병렬 세션 레인 분담: `docs/HEAD.md` (레인을 받았으면 소유 경로만 수정)
 
 ## 경계 (중요)
-- `apps/video/` = **화상통화 담당 팀원 소유**. 플랫폼 작업에서 이 폴더를 수정하지 않는다. 연동은 `docs/video-integration.md`의 계약으로만 한다.
+- 화상 진료 코드(`apps/web/video/`, `apps/web/app/video/`, `apps/web/app/api/`, `apps/web/public/mediapipe/`) = **화상통화 담당 팀원 소유**. 플랫폼 앱 안에 있지만 플랫폼 작업에서 이 경로들을 수정하지 않는다. 연동은 `docs/video-integration.md`의 계약으로만 한다.
 - 플랫폼 = `apps/web/` + `supabase/`.
 - 계약(`docs/video-integration.md`)을 바꿔야 하면 코드보다 문서를 먼저 고치고 팀원에게 알린다.
 

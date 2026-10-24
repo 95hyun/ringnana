@@ -31,7 +31,7 @@ async function ConsultRoom({ params, lang, t, dict }: { params: Promise<{ id: st
     name: c.patients?.name ?? undefined,
     lang: htmlLang(lang) === "ko" ? "ko" : "ja",
     returnUrl: platformUrl(href(lang, `/quote/${c.id}`), origin),
-  });
+  }, origin);
   const doctor = localized(c.doctors, lang);
   const clinic = localized(c.doctors?.clinics, lang);
   // specialty는 _ja 컬럼이 없는 한국어 원문 — 사전에 있으면 현지화

@@ -3,14 +3,14 @@
 > ⚠️ **초안 — 화상 담당 팀원과 합의 필요.** 팀원 구현이 먼저 진행 중이므로, 팀원 쪽 방식과 다르면 이 문서를 팀원 구현에 맞춘다.
 
 ## 소유
-- `apps/video/` = 팀원 소유. 플랫폼 작업은 이 폴더를 수정하지 않는다.
+- 화상 진료 코드(`apps/web/video/`, `apps/web/app/video/`, `apps/web/app/api/`, `apps/web/public/mediapipe/`) = 팀원 소유. 화상 진료는 플랫폼 앱 안 `/video` 아래에서 돌고(배포 하나), 플랫폼 작업은 이 경로들을 수정하지 않는다.
 - 플랫폼은 아래 계약만 사용한다.
 
 ## 1. 입장 (플랫폼 → video)
 플랫폼이 진료(`consultations`)를 만들 때 `video_session_id`를 발급하고, 환자·의사를 아래 URL로 보낸다.
 
 ```
-{NEXT_PUBLIC_VIDEO_BASE_URL}/room/{sessionId}?role={patient|doctor}&name={표시이름}&lang={ja|ko}&returnUrl={종료 후 돌아올 URL}
+{VIDEO_BASE}/room/{sessionId}?role={patient|doctor}&name={표시이름}&lang={ja|ko}&returnUrl={종료 후 돌아올 URL}
 ```
 
 | 파라미터 | 필수 | 설명 |
@@ -28,7 +28,7 @@
 - returnUrl(절대 URL, 언어 구간 포함 — `docs/i18n.md`): 의사 `/{lang}/clinic/consult/{consultationId}?ended=1`, 환자 `/{lang}/quote/{consultationId}`. `{lang}` = 입장한 화면의 경로 언어(`jp`|`ko`). video는 returnUrl을 그대로 쓰면 된다.
 - `lang` 쿼리(video UI 언어)는 `ja|ko` 그대로다 — 경로 값 `jp`와 다르다. 환자는 경로 `jp`→`ja`, `ko`→`ko`, 의사는 `ko`.
 
-- video 앱은 노트북 2대 시연을 위해 HTTPS로 띄운다. `NEXT_PUBLIC_VIDEO_BASE_URL`은 `https://{video 노트북 IP}:3001` 형태가 된다 ([video.md](video.md) §9).
+- `VIDEO_BASE` = `NEXT_PUBLIC_VIDEO_BASE_URL`이 있으면 그 값, 없으면 **같은 앱의 `{origin}/video`** (`lib/video.ts`의 `videoBaseUrl`). 배포본은 따로 설정할 것이 없다. 로컬에서 노트북 2대로 시연할 때는 카메라 때문에 HTTPS가 필요해 `pnpm dev:https`로 띄운다 ([video.md](video.md) §9).
 
 ## 2. 종료 알림 (video → 플랫폼, 선택)
 통화 종료를 플랫폼이 알아야 상태를 `done`으로 바꾼다. 둘 중 하나:
@@ -73,11 +73,11 @@
 ## 5. 입장 전 장치 점검 (H3 제안 — 화상 담당 수락, 시간이 남으면 만든다)
 환자 대기 화면(`/{lang}/consult/{id}`)에 "카메라·마이크 점검" 버튼을 두고 싶다. 플랫폼에서 직접 `getUserMedia`로 점검하지 않는 이유:
 - 2노트북 시연에서 환자는 플랫폼을 `http://{IP}:3000`으로 연다 — 비보안 출처라 브라우저가 카메라 API를 막는다.
-- 카메라 권한은 출처별이라, 플랫폼에서 허용해도 video 앱(`https://{IP}:3001`)에서 다시 묻는다.
+- 카메라 권한은 출처별이라, 같은 앱이라 플랫폼에서 한 번 허용하면 화상 진료에서도 유지된다(같은 출처).
 
 제안: video 앱이 점검 페이지를 제공하고 플랫폼은 새 탭으로 연다.
 ```
-{NEXT_PUBLIC_VIDEO_BASE_URL}/check?lang={ja|ko}&returnUrl={대기 화면 URL}
+{VIDEO_BASE}/check?lang={ja|ko}&returnUrl={대기 화면 URL}
 ```
 - 카메라 미리보기·마이크 입력 레벨·스피커 테스트음, 권한 거부 시 해결 안내.
 - 여기서 권한을 허용해 두면 실제 입장 때 다시 묻지 않는다(같은 출처).
@@ -88,7 +88,7 @@
 
 **호출 (H3):** 의사가 콘솔에서 소견(`consultations.notes`)을 저장한 직후, **콘솔 화면(브라우저)**이 아래를 부른다. 서버끼리 부르지 않는다(video는 개발용 인증서라 서버 간 호출이 실패하기 쉽다. 의사 브라우저는 통화 때 인증서를 이미 허용했다).
 ```
-POST {NEXT_PUBLIC_VIDEO_BASE_URL}/api/opinion/translate
+POST /api/opinion/translate   (같은 앱 — VIDEO_BASE를 따로 지정했으면 그 주소)
 Content-Type: application/json
 { "consultationId": "<uuid>" }
 ```

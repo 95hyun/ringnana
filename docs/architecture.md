@@ -11,7 +11,7 @@
 | 인증 | 환자만 Supabase Auth 이메일+비밀번호 → 서명 쿠키 세션 | 의사는 로그인 없음(`DEMO_DOCTOR_ID`). 아래 "인증" |
 | 외부 API | bbanana.ai (`https://www.bbanana.ai/v1`) | 셀카 → 시술 기대 이미지 (H2). 서버 전용 키 `BBANANA_API_KEY` |
 | 배포 | Vercel | 데모 URL용 (클라우드 Supabase 연결 후) |
-| 화상통화 | 팀원 구현 (`apps/video`) | [video-integration.md](video-integration.md) |
+| 화상통화 | 팀원 구현 (플랫폼 앱 안 `/video`, 코드 `apps/web/video`) | [video-integration.md](video-integration.md) |
 | i18n | `/[lang]/` 경로 + 레인별 사전 파일 ([i18n.md](i18n.md)) | 라이브러리 없이 Next.js 기본 패턴. 값: `jp`(기본)·`ko` |
 | 폰트 | Noto Sans JP(기본 `--font-sans`), Noto Sans KR(`--font-kr`, 의원 셸) | `app/layout.tsx` |
 
@@ -133,4 +133,4 @@ apps/web/
 `apps/web/README.md` 참고. 요약: `pnpm install` → `pnpm db:start` → `.env.local` → `pnpm db:reset && pnpm seed` → `pnpm dev`.
 
 ## 환경변수
-`.env.example` 참조. `NEXT_PUBLIC_VIDEO_BASE_URL` = 화상 앱 주소.
+`.env.example` 참조. `NEXT_PUBLIC_VIDEO_BASE_URL` = 화상 앱 주소(선택 — 비우면 같은 앱의 `/video`). 화상 진료는 `ANTHROPIC_API_KEY`(통역·소견 번역)가 추가로 필요하고, 중계 서버 `TURN_URLS`·`TURN_USERNAME`·`TURN_CREDENTIAL`, LAN 개발 허용 호스트 `ALLOWED_DEV_ORIGINS`는 선택.

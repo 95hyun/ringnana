@@ -37,7 +37,7 @@
 - H1 완료 후 시작 순서: `git pull` → `apps/web/README.md`의 로컬 실행 → `docs/architecture.md`의 "데이터 접근 규칙"을 읽고 착수. 패키지 추가·shadcn 컴포넌트 추가는 `package.json` 소유자인 H1에 요청한다.
 - 레인별 공용 컴포넌트는 자기 폴더 안 `_components/`에 둔다.
 - **소유하지 않은 파일은 수정하지 않는다.** 필요하면 소유 레인에 메시지로 요청하고(아래 '레인 간 소통'), 답을 기다리는 동안 임시로 자기 폴더 안에서 우회한다.
-- `apps/video/`는 사람 팀원 소유 — 어떤 head도 수정하지 않는다.
+- 화상 진료 코드(`apps/web/video/`, `apps/web/app/video/`, `apps/web/app/api/`, `apps/web/public/mediapipe/`)는 사람 팀원 소유 — 어떤 head도 수정하지 않는다.
 - 스키마 변경은 H1만 한다. 다른 레인은 H1에 요청한다.
 
 ## 레인 간 소통 (필요할 때만)

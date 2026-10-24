@@ -7,8 +7,9 @@ export const DEFAULT_LANG: Lang = "jp";
 
 const HTML_LANG: Record<Lang, string> = { jp: "ja", ko: "ko" };
 
-export function isLang(value: string): value is Lang {
-  return (LANGS as readonly string[]).includes(value);
+// next/root-params의 lang()은 /dev 같은 언어 없는 루트 때문에 undefined일 수 있다
+export function isLang(value: string | undefined): value is Lang {
+  return value !== undefined && (LANGS as readonly string[]).includes(value);
 }
 
 export function htmlLang(lang: Lang): string {

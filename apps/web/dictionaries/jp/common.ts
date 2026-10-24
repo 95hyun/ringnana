@@ -34,6 +34,12 @@ const common = {
     quote: "見積",
     aftercare: "ケア",
   },
+  // 헤더 3단계 (components/shell/flow-steps.tsx)
+  flowSteps: {
+    intake: "問診",
+    review: "医師の確認",
+    note: "所見・見積",
+  },
   stepLabel: "ステップ",
   langSwitcher: "言語を切り替える",
   countries: {
@@ -55,6 +61,7 @@ const common = {
     rejuran: "リジュラン",
     aqua_peel: "アクアピール",
     botox_jaw: "ボトックス（エラ）",
+    botox_eye: "ボトックス（目尻のシワ）",
   },
   states: {
     loading: "読み込み中…",

@@ -12,6 +12,7 @@ import { formatDateTime } from "@/lib/format";
 import { CLINIC_TIME_ZONE } from "@/lib/market";
 import { supabaseServer } from "@/lib/supabase/server";
 import { AutoRefresh } from "./_components/auto-refresh";
+import { FlagChip } from "./_components/flag-chip";
 import { fmt, label, type H3Dict } from "./_components/labels";
 
 const STATUS_ORDER: Record<string, number> = { in_call: 0, requested: 1, scheduled: 2, done: 3 };
@@ -49,7 +50,7 @@ async function Queue({ lang, t }: { lang: Lang; t: H3Dict["clinic"] }) {
           // 행 전체가 링크 — 환자명 Link의 after 오버레이가 행을 덮는다
           <TableRow key={c.id} data-consultation={c.id} data-status={c.status} className={`group relative cursor-pointer ${c.status === "done" ? "opacity-60" : ""}`}>
             <TableCell>
-              <Badge variant={c.status === "requested" ? "default" : c.status === "in_call" ? "destructive" : "secondary"}>
+              <Badge variant={c.status === "requested" ? "default" : c.status === "in_call" ? "hold" : "outline"}>
                 {label(t.labels.status, c.status)}
               </Badge>
             </TableCell>
@@ -68,9 +69,9 @@ async function Queue({ lang, t }: { lang: Lang; t: H3Dict["clinic"] }) {
                   <span className="text-muted-foreground">{q.none}</span>
                 ) : (
                   c.intakes!.flags.map((f) => (
-                    <Badge key={f} variant="destructive">
+                    <FlagChip key={f} flag={f}>
                       {label(t.labels.flags, f)}
-                    </Badge>
+                    </FlagChip>
                   ))
                 )}
               </div>

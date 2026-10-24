@@ -4,6 +4,7 @@ import { lang as rootLang } from "next/root-params";
 import { Suspense } from "react";
 import { PatientStepper } from "@/components/shell/patient-stepper";
 import { buttonVariants } from "@/components/ui/button";
+import { DisclaimerBar } from "@/components/ui/disclaimer-bar";
 import { AutoRefresh } from "@/app/[lang]/clinic/_components/auto-refresh";
 import { fmt, type H3Dict } from "@/app/[lang]/clinic/_components/labels";
 import { requestOrigin } from "@/app/[lang]/clinic/_components/origin";
@@ -94,6 +95,8 @@ async function ConsultRoom({ params, lang, t, dict }: { params: Promise<{ id: st
           <span className="inline-flex h-10 items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">{t.waiting}</span>
         </div>
       )}
+
+      <DisclaimerBar>{dict.common.disclaimer}</DisclaimerBar>
 
       {c.status !== "done" ? (
         <a href={contactHref} className="text-center text-sm text-muted-foreground underline underline-offset-4" data-contact>

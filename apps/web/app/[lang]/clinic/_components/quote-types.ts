@@ -19,6 +19,7 @@ export const QUOTE_PRESETS: Omit<QuoteItem, "visit_days">[] = [
   { code: "rejuran", name: "리쥬란 힐러", name_ja: "リジュラン", sessions: 1, price_krw: 300000 },
   { code: "aqua_peel", name: "아쿠아필", name_ja: "アクアピール", sessions: 1, price_krw: 60000 },
   { code: "botox_jaw", name: "보톡스(사각턱)", name_ja: "ボトックス（エラ）", sessions: 1, price_krw: 120000 },
+  { code: "botox_eye", name: "보톡스(눈가 주름)", name_ja: "ボトックス（目尻のシワ）", sessions: 1, price_krw: 100000 },
 ];
 
 // jsonb → QuoteItem (seed의 visit_days 없는 항목도 받는다)

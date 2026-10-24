@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Check } from "lucide-react";
+import { useState, useTransition, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,16 +15,20 @@ import { saveQuote } from "../actions";
 type Props = {
   consultationId: string;
   initialNotes: string;
-  initialItems: QuoteItem[];
+  // 항목은 AI 브리프 "소견에 포함" 체크박스와 공유하므로 상위(BriefWorkspace)가 가진다
+  items: QuoteItem[];
+  setItems: Dispatch<SetStateAction<QuoteItem[]>>;
   initialValidUntil: string;
   // 체류 N일차 → 날짜 라벨 (예: ["10/25", "10/26", ...]). 일정이 없으면 빈 배열
   tripDates: string[];
   t: H3Dict["clinic"]["quote"];
+  // 통화 중: 소견란 = 실시간 메모, Primary는 통화 종료(footer)라 확정 버튼은 outline
+  live?: { notesLabel: string; footer: ReactNode };
+  itemsLabel: string;
 };
 
-export function QuoteForm({ consultationId, initialNotes, initialItems, initialValidUntil, tripDates, t }: Props) {
+export function QuoteForm({ consultationId, initialNotes, items, setItems, initialValidUntil, tripDates, t, live, itemsLabel }: Props) {
   const [notes, setNotes] = useState(initialNotes);
-  const [items, setItems] = useState<QuoteItem[]>(initialItems);
   const [validUntil, setValidUntil] = useState(initialValidUntil);
   const [pending, startTransition] = useTransition();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -58,12 +63,8 @@ export function QuoteForm({ consultationId, initialNotes, initialItems, initialV
   return (
     <div className="flex flex-col gap-5" data-quote-form>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="notes">{t.notes}</Label>
-        <Textarea id="notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t.notesPlaceholder} />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label>{t.addItem}</Label>
+        <Label className="text-[13px] font-semibold">{itemsLabel}</Label>
+        <span className="text-xs text-muted-foreground">{t.addItem}</span>
         <div className="flex flex-wrap gap-2">
           {QUOTE_PRESETS.map((p) => (
             <Button key={p.name} variant="outline" size="sm" data-preset={p.name} onClick={() => setItems((prev) => [...prev, { ...p, visit_days: [] }])}>
@@ -78,24 +79,25 @@ export function QuoteForm({ consultationId, initialNotes, initialItems, initialV
 
       {items.map((it, idx) => (
         <div key={idx} className="flex flex-col gap-3 rounded-lg border p-3" data-quote-item={idx}>
-          <div className="grid grid-cols-[1fr_1fr_6rem_9rem_auto] items-end gap-2">
-            <div className="flex flex-col gap-1">
+          {/* 우측 5/12 칼럼에서도 맞게 2줄: 시술명·일본어 / 회차·단가·삭제 */}
+          <div className="grid grid-cols-6 items-end gap-2">
+            <div className="col-span-3 flex flex-col gap-1">
               <Label className="text-xs">{t.name}</Label>
               <Input value={it.name} onChange={(e) => update(idx, { name: e.target.value })} />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="col-span-3 flex flex-col gap-1">
               <Label className="text-xs">{t.nameJa}</Label>
               <Input value={it.name_ja} onChange={(e) => update(idx, { name_ja: e.target.value })} />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="col-span-2 flex flex-col gap-1">
               <Label className="text-xs">{t.sessions}</Label>
               <Input type="number" min={1} value={it.sessions} onChange={(e) => update(idx, { sessions: Number(e.target.value) || 1 })} />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="col-span-3 flex flex-col gap-1">
               <Label className="text-xs">{t.unitPrice}</Label>
               <Input type="number" min={0} step={10000} value={it.price_krw} onChange={(e) => update(idx, { price_krw: Number(e.target.value) || 0 })} />
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}>
+            <Button variant="ghost" size="sm" className="col-span-1" onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}>
               {t.remove}
             </Button>
           </div>
@@ -127,14 +129,35 @@ export function QuoteForm({ consultationId, initialNotes, initialItems, initialV
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" size="lg" disabled={pending} onClick={() => submit(false)}>
-          {t.saveDraft}
-        </Button>
-        <Button size="lg" disabled={pending || items.length === 0} data-confirm-quote onClick={() => setConfirmOpen(true)}>
-          {t.confirm}
-        </Button>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="notes" className="text-[13px] font-semibold">{live ? live.notesLabel : t.notes}</Label>
+        <Textarea id="notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t.notesPlaceholder} />
       </div>
+
+      {live ? (
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="lg" disabled={pending} onClick={() => submit(false)}>
+              {t.saveDraft}
+            </Button>
+            <Button variant="outline" size="lg" disabled={pending || items.length === 0} data-confirm-quote onClick={() => setConfirmOpen(true)}>
+              {t.confirm}
+            </Button>
+          </div>
+          {live.footer}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <Button variant="outline" size="lg" className="self-end" disabled={pending} onClick={() => submit(false)}>
+            {t.saveDraft}
+          </Button>
+          <Button size="lg" className="h-12 w-full" disabled={pending || items.length === 0} data-confirm-quote onClick={() => setConfirmOpen(true)}>
+            <Check aria-hidden />
+            {t.confirm}
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">{t.confirmNote}</p>
+        </div>
+      )}
       <Dialog open={confirmOpen} onOpenChange={(open) => !pending && setConfirmOpen(open)}>
         <DialogContent data-confirm-dialog>
           <DialogHeader>

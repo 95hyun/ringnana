@@ -9,7 +9,7 @@
 
 ## 프로젝트
 - 일본인 방한객용 K-피부과 비대면 진료 플랫폼. 방한 전 화상 진단·확정 견적 → 시술 예약 → 귀국 후 화상 사후관리.
-- 레포: `~/my-dev/ringnana` (GitHub `95hyun/ringnana`), 브랜치 `main`.
+- 레포: `~/my-dev/ringnana` (GitHub `95hyun/ringnana`), 작업 브랜치 **`my`** (2026-10-24 사용자 결정). `main`에 커밋·push 금지 — `main`은 화상 팀원 쪽 기준 브랜치다.
 - 해커톤이다. 기능 수보다 **3분 데모가 끊김 없이 도는 것**이 중요하다. 엔터프라이즈 인프라는 만들지 않는다.
 
 ## 시작 전에 읽을 것 (순서대로)
@@ -68,7 +68,8 @@ head끼리는 Claude Code의 세션 메시지로 직접 소통한다. 도구: `L
 - `git add`는 **자기 소유 경로만 명시**한다. `git add .`·`git add -A` 금지.
 - 다른 head의 미커밋 변경을 되돌리거나 stash하거나 지우지 않는다.
 - 커밋 메시지: `feat(web/<레인>): …` 예) `feat(web/H2): 문진 금기 스크리닝`
-- push: `git pull --rebase --autostash && git push`. 충돌이 나면 자기 파일만 해결하고, 남의 파일이 충돌하면 멈추고 보고한다.
+- 작업 전 `git branch --show-current`가 `my`인지 확인한다. 브랜치 전환·생성 금지(작업 트리를 모든 head가 공유).
+- push: `git pull --rebase --autostash && git push` (upstream = `origin/my`). `main` 내용을 `my`로 가져오는 병합은 사용자 지시가 있을 때만 한다. 충돌이 나면 자기 파일만 해결하고, 남의 파일이 충돌하면 멈추고 보고한다.
 - 작은 단위로 자주 커밋·push한다.
 
 ## 작업 방식

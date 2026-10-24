@@ -31,6 +31,7 @@ export const TREATMENT_CODES = [
   "rejuran",
   "aqua_peel",
   "botox_jaw",
+  "botox_eye",
 ] as const;
 export type TreatmentCode = (typeof TREATMENT_CODES)[number];
 

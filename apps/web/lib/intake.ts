@@ -47,3 +47,11 @@ export function validTrip(start: string | null, end: string | null): boolean {
   };
   return real(start) && real(end) && end >= start;
 }
+
+// 「記入例を入れる」 프리필 값 — 가상 페르소나(docs/demo-scenario.md: 도쿄 29세, 기미). 실제 환자 데이터 아님
+export const EXAMPLE_INTAKE: { concerns: ConcernKey[]; tripStart: string; tripEnd: string; yes: ContraindicationKey[] } = {
+  concerns: ["melasma", "pores"],
+  tripStart: "2026-11-14",
+  tripEnd: "2026-11-17",
+  yes: ["isotretinoin"],
+};

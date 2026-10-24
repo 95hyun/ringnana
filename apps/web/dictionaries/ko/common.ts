@@ -35,6 +35,11 @@ const common = {
     quote: "견적",
     aftercare: "사후관리",
   },
+  flowSteps: {
+    intake: "문진",
+    review: "의사 검토",
+    note: "소견·견적",
+  },
   stepLabel: "단계",
   langSwitcher: "언어 전환",
   countries: {
@@ -56,6 +61,7 @@ const common = {
     rejuran: "리쥬란 힐러",
     aqua_peel: "아쿠아필",
     botox_jaw: "보톡스(사각턱)",
+    botox_eye: "보톡스(눈가 주름)",
   },
   states: {
     loading: "불러오는 중…",

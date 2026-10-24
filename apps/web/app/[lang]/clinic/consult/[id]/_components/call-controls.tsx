@@ -16,9 +16,9 @@ type Props = {
   t: CallDict;
 };
 
-export function CallControls({ consultationId, status, doctorUrl, t }: Props) {
+// 서버 액션 실패가 에러 바운더리로 번져 데모 화면이 날아가지 않게 토스트로만 알린다
+function useCallAction(t: CallDict) {
   const [pending, startTransition] = useTransition();
-  // 서버 액션 실패가 에러 바운더리로 번져 데모 화면이 날아가지 않게 토스트로만 알린다
   const run = (fn: () => Promise<unknown>) =>
     startTransition(async () => {
       try {
@@ -27,6 +27,11 @@ export function CallControls({ consultationId, status, doctorUrl, t }: Props) {
         toast.error(`${t.changeFailed} ${e instanceof Error ? e.message : String(e)}`);
       }
     });
+  return { pending, run };
+}
+
+export function CallControls({ consultationId, status, doctorUrl, t }: Props) {
+  const { run } = useCallAction(t);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -35,30 +40,29 @@ export function CallControls({ consultationId, status, doctorUrl, t }: Props) {
           {t.missingVideo}
         </p>
       ) : status !== "done" ? (
-        // 링크 이동은 동기로 새 탭을 열고(팝업 차단 회피) 상태 변경은 병행한다
+        // 링크 이동은 동기로 새 탭을 열고(팝업 차단 회피) 상태 변경은 병행한다. Primary는 견적 확정 하나라 outline
         <a
           href={doctorUrl}
           target="_blank"
           rel="noopener"
           data-start-call
-          className={buttonVariants({ size: "lg" })}
+          className={buttonVariants({ variant: "outline", size: "lg" })}
           onClick={() => run(() => startCall(consultationId))}
         >
           {status === "in_call" ? t.reopen : t.start}
         </a>
       ) : null}
-      {status === "in_call" ? (
-        <Button
-          variant="destructive"
-          size="lg"
-          disabled={pending}
-          data-end-call
-          onClick={() => run(() => endCall(consultationId))}
-        >
-          {t.end}
-        </Button>
-      ) : null}
     </div>
+  );
+}
+
+// 통화 중 우측 칼럼의 Primary — 수동 종료(video 앱이 returnUrl로 못 돌아온 경우 대비)
+export function EndCallButton({ consultationId, t }: { consultationId: string; t: CallDict }) {
+  const { pending, run } = useCallAction(t);
+  return (
+    <Button size="lg" className="h-12 w-full" disabled={pending} data-end-call onClick={() => run(() => endCall(consultationId))}>
+      {t.end}
+    </Button>
   );
 }
 

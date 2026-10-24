@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { lang as rootLang } from "next/root-params";
+import { TriangleAlert } from "lucide-react";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,11 +16,20 @@ import { AutoRefresh } from "../../_components/auto-refresh";
 import { requestOrigin } from "../../_components/origin";
 import { fmt, formatKrw, label, tripDays, type H3Dict } from "../../_components/labels";
 import { parseQuoteItems } from "../../_components/quote-types";
-import { CallControls, EndOnReturn } from "./_components/call-controls";
+import { CallControls, EndCallButton, EndOnReturn } from "./_components/call-controls";
 import { CallPhotos, groupCallPhotos } from "./_components/call-photos";
-import { QuoteForm } from "./_components/quote-form";
+import { DisclaimerBar } from "@/components/ui/disclaimer-bar";
+import { SampleImage } from "@/components/ui/sample-image";
+import { BriefWorkspace } from "./_components/brief-workspace";
+import { PhotoReference, type AnglePhoto } from "./_components/photo-reference";
 
 const ANGLE_ORDER = ["front", "left", "right"];
+
+// "2026-11-14" → "11/14"
+const monthDay = (iso: string) => {
+  const [, m, d] = iso.split("-");
+  return `${Number(m)}/${Number(d)}`;
+};
 
 const isoDateFromToday = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 
@@ -88,174 +98,209 @@ async function ConsultDetail({ id, lang, t, dict }: { id: string; lang: Lang; t:
   const locked = quote && quote.status !== "draft";
   const defaultValidUntil = isoDateFromToday(30);
 
+  const tb = t.brief;
+  const concerns = intake?.concerns ?? [];
+  const flagLabels = (intake?.flags ?? []).map((f) => label(L.flags, f));
+  // 환자가 문진에서 실제로 본 일본어 라벨(H2 사전) — "원래 고민" 표시용
+  const jpConcerns: Record<string, string> = (await getDict("jp")).h2.concerns;
+  const age = c.patients?.birth_year ? fmt(t.queue.age, { n: new Date().getFullYear() - c.patients.birth_year }) : null;
+  const visiting = intake?.trip_start ? fmt(tc.visiting, { range: `${monthDay(intake.trip_start)}–${intake.trip_end ? monthDay(intake.trip_end) : ""}` }) : null;
+  const anglePhotos: AnglePhoto[] = ANGLE_ORDER.map((a) => {
+    const i = photos.findIndex((p) => p.angle === a);
+    return { angle: a, label: label(L.angles, a), url: i >= 0 ? (urls[i] ?? null) : null, qualityOk: i >= 0 ? photos[i].quality_ok : null };
+  });
+
+  // 금기 플래그 = 문진 "예" 응답 그대로(경고 톤, 빨강 금지). 위험도·가부는 매기지 않는다
+  const flagCard =
+    flagLabels.length > 0 ? (
+      <div className="flex flex-col gap-2 rounded-lg border border-warning-border bg-warning-tint p-4" data-flag-card>
+        <p className="flex items-center gap-2 text-[13px] font-semibold text-warning-foreground">
+          <TriangleAlert className="size-4 shrink-0" aria-hidden />
+          {fmt(tb.flagTitle, { flags: flagLabels.join(", ") })}
+        </p>
+        <p className="text-[13px] leading-relaxed text-warning">{tb.flagBody}</p>
+      </div>
+    ) : null;
+
   return (
-    <div className="flex flex-col gap-6" data-consultation={c.id} data-status={c.status}>
+    <div className="flex flex-col gap-7" data-consultation={c.id} data-status={c.status}>
       <Suspense>
         <EndOnReturn consultationId={c.id} t={t.call} />
       </Suspense>
       {c.status === "in_call" ? <AutoRefresh /> : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-1.5">
           <Link href={href(lang, "/clinic")} className="text-sm text-muted-foreground hover:underline">
             {tc.back}
           </Link>
-          <h1 className="text-2xl font-bold">{patientName(c.patients)}</h1>
-          {c.patients?.birth_year ? <span className="text-muted-foreground">{fmt(t.queue.age, { n: new Date().getFullYear() - c.patients.birth_year })} · {c.patients.country}</span> : null}
-          <Badge variant={c.status === "in_call" ? "destructive" : "secondary"}>{label(L.status, c.status)}</Badge>
+          <h1 className="text-[28px] leading-tight font-semibold">{tc.title}</h1>
+          <p className="text-[13px] text-muted-foreground">{tc.subtitle}</p>
         </div>
-        <CallControls consultationId={c.id} status={c.status} doctorUrl={doctorUrl} t={t.call} />
+        <div className="flex flex-wrap items-center gap-3">
+          <Badge variant={c.status === "requested" ? "default" : c.status === "in_call" ? "hold" : "outline"}>{label(L.status, c.status)}</Badge>
+          <CallControls consultationId={c.id} status={c.status} doctorUrl={doctorUrl} t={t.call} />
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>{tc.intake}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-sm">
-            <div>
-              <span className="text-muted-foreground">{tc.concerns} </span>
-              {(intake?.concerns ?? []).map((k) => label(L.concerns, k)).join(", ") || "—"}
+      <div className="flex flex-wrap items-center justify-between gap-6 border-b pb-6" data-patient-summary>
+        <div className="flex flex-col gap-2.5">
+          <p className="text-lg font-semibold">{[patientName(c.patients), age, c.patients?.country, visiting].filter(Boolean).join(" · ")}</p>
+          {concerns.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {concerns.map((k) => (
+                <Badge key={k} variant="role-doctor" className="rounded-sm" data-concern={k}>
+                  {label(L.concerns, k)}
+                </Badge>
+              ))}
             </div>
-            <div className="flex flex-wrap items-center gap-1">
-              <span className="text-muted-foreground">{tc.flags} </span>
-              {(intake?.flags ?? []).length === 0 ? (
-                <span>{tc.none}</span>
-              ) : (
-                intake!.flags.map((f) => (
-                  <Badge key={f} variant="destructive" data-flag={f}>
-                    {label(L.flags, f)}
-                  </Badge>
-                ))
-              )}
+          ) : null}
+          {flagLabels.length > 0 ? (
+            <p className="flex items-center gap-1.5 text-[13px] font-medium text-warning-foreground" data-flags>
+              <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden />
+              {tc.flags} · {flagLabels.join(", ")}
+            </p>
+          ) : null}
+        </div>
+        {/* 측정값이 아닌 예시 지표 — 데모 연출용임을 바로 아래에 밝힌다 */}
+        <div className="flex flex-col gap-1 border-l pl-7">
+          <p className="text-[28px] font-semibold text-primary tabular-nums">{tc.metric}</p>
+          <p className="text-xs text-muted-foreground">{tc.metricNote}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-8 md:grid-cols-12">
+        <div className="flex min-w-0 flex-col gap-6 md:col-span-7">
+          <PhotoReference
+            photos={anglePhotos}
+            t={{
+              title: tc.photoRef,
+              angleCount: fmt(tc.angleCount, { n: ANGLE_ORDER.length }),
+              sample: tc.sample,
+              sampleImage: dict.common.sampleImage,
+              qualityCheck: tc.qualityCheck,
+              sampleNote: tc.sampleNote,
+            }}
+          />
+          <section className="flex flex-col gap-3 border-t pt-4">
+            <h2 className="text-[15px] font-semibold">{t.callPhotos.title}</h2>
+            <CallPhotos batches={callBatches} t={t.callPhotos} labels={L.angles} dateLocale={t.dateLocale} />
+          </section>
+          <section className="flex flex-col gap-3 border-t pt-4" data-expectation>
+            <h2 className="text-[15px] font-semibold">{tc.expectation}</h2>
+            <div className="grid max-w-md grid-cols-2 gap-3">
+              {[
+                { key: "selfie", url: selfieUrl, caption: tc.selfie, ai: false },
+                // 목표 이미지 = 환자가 원하는 모습(AI). 결과 예측이 아니라 가능 범위를 설명하는 근거 자료
+                { key: "preview", url: previewUrl, caption: tc.preview, ai: true },
+              ].map((x) => (
+                <div key={x.key} className="flex flex-col gap-1" data-expectation-slot={x.key}>
+                  {x.url ? (
+                    // AI Label은 눈에 덜 띄게(design.md 5-3) — 사진 위 오버레이 대신 아래 보더 칩
+                    <SampleImage src={x.url} alt={x.caption} label={x.ai ? undefined : dict.common.sampleImage} />
+                  ) : (
+                    <div className="flex aspect-[4/5] items-center justify-center rounded-xl border border-dashed text-xs text-muted-foreground">{tc.noImage}</div>
+                  )}
+                  <span className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                    {x.caption}
+                    {x.ai ? <Badge variant="ai-label">{dict.common.aiLabel}</Badge> : null}
+                  </span>
+                </div>
+              ))}
             </div>
-            <div className="flex flex-col gap-1" data-contraindications>
-              <span className="text-muted-foreground">{tc.answers}</span>
-              <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+            <p className="text-xs text-muted-foreground">{tc.expectationNote}</p>
+          </section>
+          <section className="flex flex-col gap-2 border-y py-4" data-original-concerns>
+            <span className="text-[11px] font-semibold text-muted-foreground">{tc.originalConcerns}</span>
+            <p lang="ja" className="text-base leading-[1.75]">
+              {concerns.map((k) => jpConcerns[k] ?? k).join("、") || "—"}
+            </p>
+            {concerns.length > 0 ? <p className="text-[13px] text-muted-foreground">“{concerns.map((k) => label(L.concerns, k)).join(", ")}”</p> : null}
+            <div className="flex flex-col gap-3 rounded-lg border bg-surface p-4" data-contraindications>
+              <span className="text-[11px] font-semibold text-muted-foreground">{tc.submittedIntake}</span>
+              <div className="flex flex-col gap-1">
+                <span className="text-[13px] font-semibold">{tc.concerns}</span>
+                <span className="text-[15px]">{concerns.map((k) => label(L.concerns, k)).join(", ") || tc.none}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 {CONTRAINDICATION_KEYS.map((k) => {
                   const v = answers[k];
                   return (
-                    <li key={k} className="flex justify-between border-b border-dashed py-0.5" data-answer={k}>
-                      <span>{label(L.flags, k)}</span>
-                      <span className={v === true ? "font-semibold text-destructive" : "text-muted-foreground"}>
+                    <div key={k} className="flex flex-col gap-1" data-answer={k}>
+                      <span className="text-[13px] font-semibold">{label(L.flags, k)}</span>
+                      <span className={v === true ? "text-[15px] font-semibold text-warning-foreground" : "text-[15px] text-muted-foreground"}>
                         {v === true ? tc.yes : v === false ? tc.no : tc.unanswered}
                       </span>
-                    </li>
+                    </div>
                   );
                 })}
-              </ul>
-            </div>
-            <div>
-              <span className="text-muted-foreground">{tc.trip} </span>
-              {intake?.trip_start ? `${intake.trip_start} ~ ${intake.trip_end ?? ""} (${fmt(tc.days, { n: nDays })})` : "—"}
-            </div>
-            <p className="text-xs text-muted-foreground">{tc.flagNote}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{tc.photos}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {photos.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{tc.noPhotos}</p>
-            ) : (
-              <div className="grid grid-cols-3 gap-3">
-                {photos.map((p, i) => (
-                  <figure key={p.id} className="flex flex-col gap-1" data-photo={p.angle}>
-                    {urls[i] ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- signed URL은 매번 바뀌어 next/image 최적화 대상 아님
-                      <a href={urls[i]!} target="_blank" rel="noopener"><img src={urls[i]!} alt={label(L.angles, p.angle)} className="aspect-[3/4] w-full rounded border object-cover" /></a>
-                    ) : (
-                      <div className="flex aspect-[3/4] items-center justify-center rounded border text-xs text-muted-foreground">{tc.photoLoadFailed}</div>
-                    )}
-                    <figcaption className="text-center text-xs text-muted-foreground">
-                      {label(L.angles, p.angle)}
-                      {p.quality_ok === false ? tc.qualityCheck : ""}
-                    </figcaption>
-                  </figure>
-                ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[13px] font-semibold">{tc.trip}</span>
+                <span className="text-[15px]">{intake?.trip_start ? `${intake.trip_start} ~ ${intake.trip_end ?? ""} (${fmt(tc.days, { n: nDays })})` : "—"}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{tc.flagNote}</p>
+            </div>
+          </section>
+        </div>
 
-      <Card data-expectation>
-        <CardHeader>
-          <CardTitle>{tc.expectation}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid max-w-xl grid-cols-2 gap-3">
-          {[
-            { key: "selfie", url: selfieUrl, caption: tc.selfie },
-            { key: "preview", url: previewUrl, caption: tc.preview },
-          ].map((x) => (
-            <figure key={x.key} className="flex flex-col gap-1" data-expectation-slot={x.key}>
-              {x.url ? (
-                <div className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- signed URL은 매번 바뀌어 next/image 최적화 대상 아님 */}
-                  <img src={x.url} alt={x.caption} className="aspect-[3/4] w-full rounded border object-cover" />
-                  {/* 환자에게 보인 것과 같은 고지를 유지 — 실제 결과가 아님 */}
-                  {x.key === "preview" ? (
-                    <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">{tc.aiNotice}</span>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="flex aspect-[3/4] items-center justify-center rounded border border-dashed text-xs text-muted-foreground">{tc.noImage}</div>
-              )}
-              <figcaption className="text-center text-xs text-muted-foreground">{x.caption}</figcaption>
-            </figure>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t.callPhotos.title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CallPhotos batches={callBatches} t={t.callPhotos} labels={L.angles} dateLocale={t.dateLocale} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{tc.quoteTitle}</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <div className="flex min-w-0 flex-col gap-5 md:col-span-5">
           {locked ? (
-            <div className="flex flex-col gap-3 text-sm" data-quote-locked={quote.status}>
-              <p className="whitespace-pre-wrap">{c.notes || "—"}</p>
-              <ul className="flex flex-col gap-1">
-                {items.map((it, i) => (
-                  <li key={i} className="flex justify-between border-b py-1">
-                    <span>
-                      {treatmentName(it, lang, dict) ?? it.name} {lang === "ko" && it.name_ja ? <span className="text-muted-foreground">({it.name_ja})</span> : null} {fmt(tc.sessions, { n: it.sessions })}
-                      {it.visit_days.length > 0 ? <span className="text-muted-foreground"> · {fmt(tc.stayDays, { days: it.visit_days.join("·") })}</span> : null}
-                    </span>
-                    <span>{formatKrw(it.sessions * it.price_krw)}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="flex justify-between font-bold">
-                <span>{fmt(tc.totalWithValidity, { date: quote.valid_until ?? "—" })}</span>
-                <span>{formatKrw(quote.total_krw)}</span>
-              </div>
-              <Badge>{quote.status === "accepted" ? tc.accepted : tc.confirmedWaiting}</Badge>
-            </div>
+            <>
+              {flagCard}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{tc.quoteTitle}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col gap-3 text-sm" data-quote-locked={quote.status}>
+                    <p className="whitespace-pre-wrap">{c.notes || "—"}</p>
+                    <ul className="flex flex-col gap-1">
+                      {items.map((it, i) => (
+                        <li key={i} className="flex justify-between border-b py-1">
+                          <span>
+                            {treatmentName(it, lang, dict) ?? it.name} {lang === "ko" && it.name_ja ? <span className="text-muted-foreground">({it.name_ja})</span> : null} {fmt(tc.sessions, { n: it.sessions })}
+                            {it.visit_days.length > 0 ? <span className="text-muted-foreground"> · {fmt(tc.stayDays, { days: it.visit_days.join("·") })}</span> : null}
+                          </span>
+                          <span>{formatKrw(it.sessions * it.price_krw)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="flex justify-between font-bold">
+                      <span>{fmt(tc.totalWithValidity, { date: quote.valid_until ?? "—" })}</span>
+                      <span>{formatKrw(quote.total_krw)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="doctor-confirmed" data-doctor-confirmed>{tc.doctorConfirmed}</Badge>
+                      <span className="text-xs text-muted-foreground">{quote.status === "accepted" ? tc.accepted : tc.confirmedWaiting}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
           ) : (
-            <QuoteForm
+            <BriefWorkspace
               consultationId={c.id}
               initialNotes={c.notes ?? ""}
               initialItems={items}
               initialValidUntil={quote?.valid_until ?? defaultValidUntil}
               tripDates={tripDates}
-              t={t.quote}
+              flagCard={flagCard}
+              liveFooter={
+                c.status === "in_call" ? (
+                  <>
+                    <EndCallButton consultationId={c.id} t={t.call} />
+                    <p className="text-xs leading-relaxed text-muted-foreground">{tb.liveNote}</p>
+                  </>
+                ) : undefined
+              }
+              t={{ brief: t.brief, quote: t.quote }}
             />
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      <DisclaimerBar>{dict.common.disclaimer}</DisclaimerBar>
     </div>
   );
 }

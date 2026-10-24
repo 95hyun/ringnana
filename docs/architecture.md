@@ -74,10 +74,10 @@ apps/web/
 - 폰트: Inter + Noto Sans JP(400·500·600), ko 화면은 `font-ko`(Inter + Noto Sans KR). 본문 15px, jp(html lang=ja) 행간 1.7. lucide 선 굵기 1.75(전역 CSS).
 - 형태: 카드 `rounded-xl`(12px)·border·shadow-sm, 버튼·입력 `rounded-lg`(10px)·높이 44px, 배지 999px.
 - `components/ui/`: Button `default`(Primary)·`outline`·`ghost` · Badge `role-patient`·`role-doctor`·`ai-label`·`doctor-confirmed`·`flag-high`·`flag-medium`·`hold` · `DisclaimerBar`(children = `common.disclaimer`) · `LoadingCard`(steps·caption prop, 페이드 200ms) · `SampleImage`(4:5 cover + 좌하단 라벨, `common.sampleImage`/`common.aiLabel`).
-- 셸: 헤더 64px, 워드마크 Ringnana(Inter 18/600), 우측 언어 스위처 + 역할 배지(환자 blush / 의사 primary) + 데모용 환자↔의원 화면 전환. 모바일은 JA/KO 축약.
-- 환자 2단: `<PatientWideLayout left right />`(`components/shell/patient-wide.tsx`, 좌7/우5, 최대 1200px). 이게 있는 페이지만 PatientShell이 넓어진다(랜딩·필요 화면). 390px에서는 1단.
+- 셸: 헤더 60px(Figma 헤더), 워드마크 Ringnana(Inter 17/700), 가운데 3단계 `FlowSteps`(문진·의사 검토·소견/견적 — 경로로 현재 단계 판정, `components/shell/flow-steps.tsx`), 우측 언어 스위처 + 역할 배지(환자 blush / 의사 primary) + 데모용 환자↔의원 화면 전환. 환자 헤더는 자기 폭 기준(@container)으로 좁으면 3줄(워드마크·배지 / 단계 / 화면 전환), 모바일은 JA/KO 축약.
+- 환자 넓은 화면: 페이지에 `data-layout="wide"` 요소(또는 `<PatientWideLayout left right />`, 좌7/우5)가 있으면 PatientShell이 전체 폭(헤더 전폭 + 본문 가운데 최대 1200px)으로 바뀐다. 390px에서는 1단.
 - 푸터: PatientShell 하단 `SiteFooter`(운영사·등록번호·제휴 의원·문의·약관 링크, 전부 가상). 약관 링크 = `href(lang, "/legal/terms|privacy|tokushoho")`.
-- 환자 스테퍼: `<PatientStepper lang={lang} current="intake|photos|consult|quote|aftercare" />`를 각 화면 상단에 넣는다(서버 컴포넌트).
+- 진행 단계는 헤더 `FlowSteps`가 표시한다. 예전 `PatientStepper`는 호출부 호환용 빈 컴포넌트(새 화면에서 쓰지 않는다).
 
 ## 시장·형식 (`lib/market.ts`, `lib/format.ts`)
 - **언어 ≠ 시장.** 경로 값(jp/ko)은 보는 언어, 시장은 `ACTIVE_MARKET`(지금 JP: 표시 통화 JPY, 시간대 Asia/Tokyo, 참고 환율 1곳 + 기준일). `/ko`로 봐도 대상 시장은 일본이다.

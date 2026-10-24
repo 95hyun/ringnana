@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { PatientStepper } from "@/components/shell/patient-stepper";
 import { getDict, href, isLang, type Lang } from "@/lib/i18n";
 import { requirePatient } from "../login/_lib/session";
 import { IntakeForm } from "./_components/intake-form";
@@ -9,10 +8,16 @@ async function IntakeBody({ lang }: { lang: Lang }) {
   const [patient, dict] = await Promise.all([requirePatient(lang, "/intake"), getDict(lang)]);
   const t = dict.h2;
   return (
-    <>
-      <p className="text-sm text-muted-foreground">{t.intake.greeting.replace("{name}", patient.name)}</p>
-      <IntakeForm lang={lang} photosPath={href(lang, "/photos")} t={t.intake} concerns={t.concerns} contraindications={t.contraindications} />
-    </>
+    <IntakeForm
+      lang={lang}
+      greeting={t.intake.greeting.replace("{name}", patient.name)}
+      photosPath={href(lang, "/photos")}
+      policyPath={href(lang, "/legal/privacy")}
+      disclaimer={dict.common.disclaimer}
+      t={t.intake}
+      concerns={t.concerns}
+      contraindications={t.contraindications}
+    />
   );
 }
 
@@ -21,9 +26,8 @@ export default async function IntakePage({ params }: PageProps<"/[lang]/intake">
   if (!isLang(lang)) notFound();
   const dict = await getDict(lang);
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4">
-      <PatientStepper lang={lang} current="intake" />
-      <h1 className="text-xl font-bold">{dict.h2.intake.title}</h1>
+    // data-layout="wide" — PatientShell이 데스크톱에서 1200px 폭으로 넓어진다 (Figma S1 데스크톱 2단)
+    <div data-layout="wide" className="flex flex-1 flex-col gap-4 py-4">
       <Suspense fallback={<p className="text-sm text-muted-foreground">{dict.common.states.loading}</p>}>
         <IntakeBody lang={lang} />
       </Suspense>

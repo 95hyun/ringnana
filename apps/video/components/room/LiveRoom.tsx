@@ -5,6 +5,8 @@ import { InterpSlot } from "@/components/interp/InterpSlot";
 import type { IceResponse, RoomContext, RoomEvent, UiLang } from "@/lib/contracts";
 import { config } from "@/lib/config";
 import { buildIceServers } from "@/lib/room/ice";
+import { callAlert as jaAlert } from "@/messages/ja/call";
+import { callAlert as koAlert } from "@/messages/ko/call";
 import type { RoomQuery } from "@/lib/room/query";
 import type { RoomText } from "@/lib/room/text";
 import { StreamVideo } from "./StreamVideo";
@@ -56,7 +58,7 @@ export function LiveRoom({
   const localStream = media.stream;
   const self = useMemo(() => ({ role, tabId, joinedAt }), [role, tabId, joinedAt]);
   const channel = useRoomChannel({ sessionId, self });
-  const { valid, superseded, send, sendAndWait, on } = channel;
+  const { valid, known, superseded, error: channelError, send, sendAndWait, on } = channel;
   const peerRole = role === "doctor" ? "patient" : "doctor";
   const peerPresent = valid[peerRole] !== null;
 
@@ -67,6 +69,7 @@ export function LiveRoom({
     mediaSettled: media.status !== "pending",
     iceServers,
     valid,
+    known,
     send,
     on,
   });
@@ -173,6 +176,8 @@ export function LiveRoom({
     media.status === "error"
       ? { denied: t.deviceDenied, notFound: t.deviceNotFound, inUse: t.deviceInUse }[media.error]
       : null;
+  const realtimeErrorText =
+    role === "doctor" ? "실시간 연결에 실패했습니다. 새로고침해 주세요" : (uiLang === "ko" ? koAlert : jaAlert).realtimeError;
   const canRetry = media.status === "error" && media.error !== "notFound";
 
   const status = (
@@ -189,6 +194,11 @@ export function LiveRoom({
   return (
     <main className="flex h-dvh flex-col">
       {renderHeader(status)}
+      {channelError && (
+        <p role="alert" className="shrink-0 bg-red-900/80 px-4 py-2 text-center text-sm text-red-100">
+          {realtimeErrorText}
+        </p>
+      )}
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 lg:flex-row">
         {/* 무대 + 상대 자막 */}

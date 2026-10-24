@@ -1,5 +1,6 @@
 "use client";
-import type { InterpSlotArea, RoomContext } from "@/lib/contracts";
+import type { InterpSlotArea, Role, RoomContext } from "@/lib/contracts";
+import { config } from "@/lib/config";
 import { interpText, type InterpText } from "@/lib/interp/text";
 import type { CaptionList, SelfCaption } from "@/lib/interp/captions";
 import type { InterpState, InterpStore } from "@/lib/interp/store";
@@ -8,12 +9,17 @@ import { useInterpEngine, useInterpState } from "./useInterpEngine";
 // 통역 화면 자리. 같은 컴포넌트가 area만 바꿔 세 번 놓이고, 상태는 sessionId별 저장소로 공유한다.
 export function InterpSlot({ ctx, area }: { ctx: RoomContext; area: InterpSlotArea }) {
   const { store, state } = useInterpState(ctx.sessionId);
-  useInterpEngine(ctx, store, area === "controls");
+  const { say } = useInterpEngine(ctx, store, area === "controls");
   const t = interpText(ctx.role, ctx.uiLang);
 
   if (area === "remoteCaption") return <RemoteCaptions list={state.remote} t={t} />;
   if (area === "selfCaption") return <SelfCaptions items={state.self} interim={state.interim} t={t} />;
-  return <Controls state={state} store={store} micMuted={ctx.micMuted} t={t} />;
+  return (
+    <>
+      <Controls state={state} store={store} micMuted={ctx.micMuted} demoMode={ctx.demoMode} t={t} />
+      {ctx.demoMode && <DemoPhrases role={ctx.role} disabled={!state.enabled} onSay={say} t={t} />}
+    </>
+  );
 }
 
 function RemoteCaptions({ list, t }: { list: CaptionList; t: InterpText }) {
@@ -72,11 +78,13 @@ function Controls({
   state,
   store,
   micMuted,
+  demoMode,
   t,
 }: {
   state: InterpState;
   store: InterpStore;
   micMuted: boolean;
+  demoMode: boolean;
   t: InterpText;
 }) {
   const status = !state.enabled
@@ -87,11 +95,27 @@ function Controls({
         ? t.translating
         : state.listening && !micMuted
           ? t.listening
-          : null;
+          : demoMode && state.talkLocked
+            ? t.talkLocked
+            : null;
+  const canTalk = state.enabled && !micMuted && state.support === "supported" && !state.talkLocked;
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Toggle on={state.enabled} label={t.interpToggle} onClick={() => store.set((s) => ({ enabled: !s.enabled }))} />
       <Toggle on={state.voiceOn} label={t.voiceToggle} onClick={() => store.set((s) => ({ voiceOn: !s.voiceOn }))} />
+      {demoMode && (
+        <button
+          type="button"
+          aria-pressed={state.talkRequested}
+          disabled={!state.talkRequested && !canTalk}
+          onClick={() => store.set((s) => ({ talkRequested: !s.talkRequested }))}
+          className={`rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-40 ${
+            state.talkRequested ? "bg-rose-600 text-white hover:bg-rose-500" : "bg-emerald-600 text-white hover:bg-emerald-500"
+          }`}
+        >
+          {state.talkRequested ? t.talkStop : t.talk}
+        </button>
+      )}
       {status && (
         <span
           className={`text-sm ${state.support === "unsupported" ? "text-amber-400" : "text-neutral-400"}`}
@@ -116,5 +140,35 @@ function Toggle({ on, label, onClick }: { on: boolean; label: string; onClick: (
     >
       {label}
     </button>
+  );
+}
+
+// 시연 모드 예시 문장 — 말한 것과 같은 길(번역 → 방송)로 보낸다. 언어는 역할로 고정이라 화면 언어와 무관.
+function DemoPhrases({
+  role,
+  disabled,
+  onSay,
+  t,
+}: {
+  role: Role;
+  disabled: boolean;
+  onSay: (text: string) => void;
+  t: InterpText;
+}) {
+  return (
+    <div role="group" aria-label={t.phrasesLabel} className="order-last flex basis-full flex-wrap items-center gap-2">
+      <span className="text-xs text-neutral-500">{t.phrasesLabel}</span>
+      {config.demo.phrases[role].map((p) => (
+        <button
+          key={p}
+          type="button"
+          disabled={disabled}
+          onClick={() => onSay(p)}
+          className="rounded-full border border-neutral-700 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-800 disabled:opacity-40"
+        >
+          {p}
+        </button>
+      ))}
+    </div>
   );
 }

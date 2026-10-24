@@ -18,6 +18,7 @@ export const call: Messages<typeof ja> = {
   callEnded: "통화가 종료되었습니다",
   remoteLabel: "의사",
   selfLabel: "나",
+  demoBadge: "시연 모드",
 };
 
 export const callAlert: Messages<typeof jaAlert> = {

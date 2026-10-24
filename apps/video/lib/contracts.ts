@@ -1,4 +1,4 @@
-// 작업 간 유일한 약속 (spec §7·§8, plan "끼움 약속"). 이 파일의 형식은 바꾸지 않는다.
+// 작업 간 유일한 약속 (spec §7·§8, plan "끼움 약속"). 형식을 바꿀 때는 쓰는 쪽을 모두 함께 고친다.
 import type { CaptureMode, PhotoAngle } from "./supabase/types";
 
 export type { CaptureMode, PhotoAngle } from "./supabase/types";
@@ -95,6 +95,7 @@ export type RoomContext = {
   peerPresent: boolean; // 상대(유효한 창) 입장 여부
   micMuted: boolean;
   testMode: boolean; // ?test=1
+  demoMode: boolean; // spec §16 한 대 시연 (?demo=1 또는 같은 브라우저의 상대 역할 창)
   send: (event: RoomEvent) => void;
   on: (handler: (event: RoomEvent) => void) => () => void;
   setPatientLayout: (mode: "call" | "capture") => void;

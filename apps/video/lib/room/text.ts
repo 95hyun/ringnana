@@ -31,6 +31,7 @@ const doctorText: RoomText = {
   callEnded: "통화가 종료되었습니다",
   remoteLabel: "환자",
   selfLabel: "나",
+  demoBadge: "시연 모드",
 };
 
 export function roomText(role: Role, uiLang: UiLang): RoomText {

@@ -8,4 +8,8 @@ export const interp = {
   aiBadge: "AI翻訳",
   translateFailed: "翻訳できませんでした",
   selfLabel: "あなたの発言",
+  talk: "話す",
+  talkStop: "止める",
+  talkLocked: "もう一方の画面が聞き取り中です",
+  phrasesLabel: "例文",
 } as const;

@@ -24,15 +24,15 @@ apps/video/
 │   └── check/                   → 점검 화면
 ├── lib/
 │   ├── contracts.ts             → 서버 API·실시간 이벤트·RoomContext 타입 (모든 부분의 공통 약속)
-│   ├── config.ts                → 현장 조정값 전부 (각도·시간·밝기·모델·볼륨)
+│   ├── config.ts                → 현장 조정값 전부 (각도·시간·밝기·모델·볼륨·시연 예시 문장)
 │   ├── capture/                 → 촬영 판단 순수 로직 (막는 조건·유지 타이머·수동 촬영)
 │   ├── capture-flow/            → 의사·환자 촬영 상태 전이 리듀서
 │   ├── face/                    → MediaPipe 얼굴 분석 → FrameAnalysis (부호 상수 YAW_SIGN/PITCH_SIGN)
 │   ├── capture-store/           → 사진 제출·조회 처리기 + Supabase/메모리 저장소
 │   ├── opinion/                 → 소견 번역 처리기 + Supabase/메모리 저장소
 │   ├── translate/               → Claude 번역기·가짜 번역기·지시문·의료 용어 대역표
-│   ├── interp/                  → 자막 목록·읽기 대기열·음성 인식 보조·통역 상태 저장소
-│   ├── room/                    → 쿼리·Presence 판단·언어 기억·ICE·장치 오류 분류 순수 로직
+│   ├── interp/                  → 자막 목록·읽기 대기열·음성 인식 보조·통역 상태 저장소·문장 번역 방송·시연 듣기 잠금
+│   ├── room/                    → 쿼리·Presence 판단·언어 기억·ICE·장치 오류 분류·시연 모드 판정(같은 브라우저 창 감지)
 │   └── supabase/                → 서버 전용 클라이언트·브라우저 클라이언트·최소 행 타입
 ├── messages/{ja,ko}/            → 환자 화면 문구 (common·call·capture·interp·check, 키 동일)
 └── public/mediapipe/            → MediaPipe wasm·얼굴 모델 (CDN 대신 앱이 직접 제공)

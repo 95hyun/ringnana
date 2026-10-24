@@ -16,6 +16,13 @@ pnpm dev                     # https://localhost:3001 (개발용 인증서 자�
 - 플랫폼의 `NEXT_PUBLIC_VIDEO_BASE_URL`을 `https://{이 노트북 IP}:3001`로 맞춘다.
 - Chrome 데스크톱만 지원한다. 양쪽 모두 이어폰을 쓴다.
 
+## PC 한 대로 시연하기
+1. `pnpm dev` 후 이 PC의 Chrome에서 의사 주소와 환자 주소를 **각각 새 창**으로 열고 화면에 나란히 둔다. 탭으로 열면 가려진 쪽의 얼굴 분석이 멈춘다.
+   - 예: `https://localhost:3001/room/00000000-0000-4000-8000-000000005001?role=doctor`와 `...?role=patient`
+2. 두 창이 서로를 알아보면 위쪽에 "시연 모드"/「デモモード」가 뜬다. 하나만 열어 시험할 때는 주소에 `&demo=1`을 붙인다.
+3. 시연 모드에서는 상대 원음이 나오지 않고(되울림 방지), [말하기]/[話す]를 누른 창만 한 문장을 듣는다. 말 대신 예시 문장 버튼을 눌러도 같은 통역이 나온다.
+4. 중계 서버는 필요 없지만 인터넷(Supabase·번역 API·Chrome 음성 인식)은 필요하다.
+
 ## 환경변수 (`apps/video/.env.local`, 커밋 금지)
 
 | 키 | 내용 |
@@ -39,6 +46,7 @@ pnpm dev                     # https://localhost:3001 (개발용 인증서 자�
 |---|---|
 | `/room/{sessionId}?role=doctor\|patient&name=&lang=ja\|ko&returnUrl=` | 방 (플랫폼이 만들어 보냄) |
 | `/room/{sessionId}?role=patient&test=1` | 통화 없이 촬영만 시험 |
+| `/room/{sessionId}?role=...&demo=1` | 한 대 시연 모드 강제 (같은 브라우저에 상대 창이 있으면 자동) |
 | `/check?lang=ja\|ko&returnUrl=` | 입장 전 카메라·마이크 점검 |
 | `POST /api/capture`, `GET /api/capture/latest` | 사진 제출·최신 회차 |
 | `POST /api/translate` | 통역 문장 번역 |
@@ -57,3 +65,4 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 - 각도·시간·밝기 등 기준값: `lib/config.ts`
 - 좌우·상하가 반대로 판정되면: `lib/face/math.ts`의 `YAW_SIGN` / `PITCH_SIGN`을 `-1`로
 - 의료 용어 대역표: `lib/translate/glossary.ts`
+- 시연 예시 문장: `lib/config.ts`의 `demo.phrases`

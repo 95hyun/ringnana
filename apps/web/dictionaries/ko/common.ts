@@ -24,6 +24,18 @@ const common = {
   },
   stepLabel: "단계",
   langSwitcher: "언어 전환",
+  countries: {
+    JP: "일본",
+    KR: "한국",
+  },
+  timeZones: {
+    "Asia/Tokyo": "일본 시간",
+    "Asia/Seoul": "한국 시간",
+  },
+  money: {
+    approx: "약 {amount}",
+    rateNote: "{date} 기준 환율({rate}) · 결제는 원화 확정 금액입니다",
+  },
   treatments: {
     pico_toning: "피코토닝",
     laser_toning: "레이저토닝",

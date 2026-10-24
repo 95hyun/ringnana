@@ -33,7 +33,8 @@ apps/web/
 │   │   │   ├── photos/               # 셀카 → AI 시술 기대 이미지 (H2)
 │   │   │   ├── consult/[id]/         # 화상 진료 대기·입장 → video 앱으로 (H3)
 │   │   │   ├── quote/[id]/           # 확정 견적 확인·예약 (H4) — id = consultation id (견적 id 아님)
-│   │   │   └── aftercare/            # 귀국 후 체크인 (H4)
+│   │   │   ├── aftercare/            # 귀국 후 체크인 (H4)
+│   │   │   └── legal/[doc]/          # terms·privacy·tokushoho 페이지 틀 (H1, 문구 dictionaries/*/legal.ts)
 │   │   └── clinic/               # 의원 콘솔 (문구는 jp 경로에서도 한국어 가능)
 │   │       ├── layout.tsx            # ClinicShell (H3)
 │   │       ├── page.tsx              # 진료 큐 (H3)
@@ -43,14 +44,17 @@ apps/web/
 │   └── api/                # 필요한 경우만 (언어 구간 밖)
 ├── components/
 │   ├── ui/                 # shadcn (H1이 추가)
-│   └── shell/              # RootHtml·PatientShell·ClinicShell·LangSwitcher·PatientStepper (H1)
-├── dictionaries/{jp,ko}/   # common.ts(H1) · h2.ts~h4.ts(각 레인) · index.ts(H1). ko는 satisfies typeof jp
+│   └── shell/              # RootHtml·PatientShell·ClinicShell·LangSwitcher·PatientStepper·SiteFooter (H1)
+├── dictionaries/{jp,ko}/   # common.ts·legal.ts·index.ts(H1) · h2.ts~h4.ts(각 레인). ko는 satisfies typeof jp
 ├── lib/
 │   ├── supabase/
 │   │   ├── server.ts             # supabaseServer() — service role, server-only
 │   │   ├── storage.ts            # uploadPhoto·signedPhotoUrl(s)·photoPath
 │   │   └── database.types.ts     # pnpm db:types 생성물 (손대지 않음)
 │   ├── i18n.ts             # LANGS·isLang·htmlLang·href·getDict (H1)
+│   ├── localize.ts         # localized·treatmentName·patientName (H1)
+│   ├── market.ts           # 시장(국가·표시 통화·시간대·환율) — 언어와 별개 (H1)
+│   ├── format.ts           # Intl 날짜·시각·통화, formatAppointment(현지+KST), formatQuotePrice, fill (H1)
 │   ├── demo.ts             # 데모 고정 ID·페르소나 계정 (H1)
 │   ├── utils.ts            # cn (shadcn)
 │   ├── intake.ts           # 금기 플래그 규칙 (H2)
@@ -67,7 +71,14 @@ apps/web/
 ## 공통 UI (H1)
 - 브랜드 토큰: `app/globals.css` `:root` — 주색 `--primary`(청록), 보조 `--accent`(샌드), 배경 톤, `--radius` 0.875rem. 화면에서 색을 하드코딩하지 않고 `bg-primary`·`bg-secondary`·`bg-accent`·`text-muted-foreground` 등 토큰 클래스를 쓴다.
 - 언어 스위처: 두 셸 헤더에 내장(현재 경로 유지, 쿼리는 유지 안 함).
+- 푸터: PatientShell 하단 `SiteFooter`(운영사·등록번호·제휴 의원·문의·약관 링크, 전부 가상). 약관 링크 = `href(lang, "/legal/terms|privacy|tokushoho")`.
 - 환자 스테퍼: `<PatientStepper lang={lang} current="intake|photos|consult|quote|aftercare" />`를 각 화면 상단에 넣는다(서버 컴포넌트).
+
+## 시장·형식 (`lib/market.ts`, `lib/format.ts`)
+- **언어 ≠ 시장.** 경로 값(jp/ko)은 보는 언어, 시장은 `ACTIVE_MARKET`(지금 JP: 표시 통화 JPY, 시간대 Asia/Tokyo, 참고 환율 1곳 + 기준일). `/ko`로 봐도 대상 시장은 일본이다.
+- 사전 분리 기준: **사전에는 "어떤 언어로 말할지"만 둔다.** 국가명·통화·시간대·환율처럼 시장이 바뀌면 달라지는 값은 문구에 박지 말고 `{country}`·`{amount}` 자리표시자로 두고 market에서 채운다(국가명 = `common.countries[market.country]`). 예) ✗ "日本にいるうちに" → ✓ "{country}にいるうちに".
+- 의원 쪽 고정값: `CLINIC_CURRENCY`=KRW(확정가), `CLINIC_TIME_ZONE`=Asia/Seoul.
+- 표시 함수: `formatDate`·`formatDateShort`·`formatTime`·`formatDateTime`(날짜 전용 "YYYY-MM-DD"는 시간대 이동 없음), `formatAppointment`(진료 시각, 현지+KST — 시차 없으면 한 번만), `formatMoney`, `formatQuotePrice`(시장 통화 참고가 크게 + KRW 확정가 + 환율 기준일), `fill`(사전 자리표시자). 화면에서 `toLocaleString`·환율 상수를 직접 쓰지 않는다.
 
 ## DB 데이터 현지화 (`lib/localize.ts`)
 - `localized(row, lang, field = "name")`: 다국어 컬럼 규칙 = 기본 컬럼(`name`) 한국어, `name_ja` 일본어. 화면에서 `name_ja ?? name`을 직접 쓰지 않는다.

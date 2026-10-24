@@ -11,6 +11,7 @@
 | P0 | 진료 큐 + 환자 문진·사진 열람 | 의원 `/clinic`, `/clinic/consult/[id]` | 플랫폼 |
 | P0 | 화상 진료 입장 연결 | 환자 `/consult/[id]` ↔ video | 플랫폼(연결) + 팀원(통화) |
 | P0 | 화상 통화 | `apps/video` | 팀원 |
+| P1 | 실시간 AI 통역 (ko↔ja 자막·음성) | `apps/video` — [video.md](video.md) §6 | 팀원 |
 | P0 | 의사 소견·확정 견적 작성 → 환자 확인 | 의원 콘솔 / 환자 `/quote/[id]` | 플랫폼 |
 | P1 | 체류 일정에 맞춘 예약 | 환자 `/quote/[id]` | 플랫폼 |
 | P1 | 귀국 후 체크인(D+3·14·30) + 이상 알림 | 환자 `/aftercare`, 의원 `/clinic/aftercare` | 플랫폼 |

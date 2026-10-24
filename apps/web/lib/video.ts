@@ -1,6 +1,7 @@
 // 화상 앱 입장 URL — docs/video-integration.md §1 계약 구현. 팀원 구현이 바뀌면 이 파일만 고친다.
 
-export type VideoRole = "patient" | "doctor" | "interpreter";
+// 통역은 video 앱의 자막으로 제공 — interpreter 역할 입장은 쓰지 않는다
+export type VideoRole = "patient" | "doctor";
 
 export type RoomUrlInput = {
   sessionId: string;

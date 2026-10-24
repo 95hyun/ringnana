@@ -13,11 +13,10 @@ type Props = {
   consultationId: string;
   status: string;
   doctorUrl: string | null;
-  interpreterUrl: string | null;
   t: CallDict;
 };
 
-export function CallControls({ consultationId, status, doctorUrl, interpreterUrl, t }: Props) {
+export function CallControls({ consultationId, status, doctorUrl, t }: Props) {
   const [pending, startTransition] = useTransition();
   // 서버 액션 실패가 에러 바운더리로 번져 데모 화면이 날아가지 않게 토스트로만 알린다
   const run = (fn: () => Promise<unknown>) =>
@@ -47,18 +46,6 @@ export function CallControls({ consultationId, status, doctorUrl, interpreterUrl
         >
           {status === "in_call" ? t.reopen : t.start}
         </a>
-      ) : null}
-      {interpreterUrl && status !== "done" ? (
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={async () => {
-            await navigator.clipboard.writeText(interpreterUrl);
-            toast.success(t.copied);
-          }}
-        >
-          {t.copyInterpreter}
-        </Button>
       ) : null}
       {status === "in_call" ? (
         <Button

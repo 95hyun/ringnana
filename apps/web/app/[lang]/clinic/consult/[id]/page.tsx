@@ -51,7 +51,6 @@ async function ConsultDetail({ id, lang, t }: { id: string; lang: Lang; t: H3Dic
   const origin = await requestOrigin();
   const sessionId = c.video_session_id;
   const doctorUrl = buildRoomUrl({ sessionId, role: "doctor", name: c.doctors?.name ?? tc.doctorFallback, lang: "ko", returnUrl: platformUrl(href(lang, `/clinic/consult/${id}?ended=1`), origin) });
-  const interpreterUrl = buildRoomUrl({ sessionId, role: "interpreter", name: tc.interpreterName, lang: "ko" });
 
   const intake = c.intakes;
   const nDays = tripDays(intake?.trip_start ?? null, intake?.trip_end ?? null);
@@ -80,7 +79,7 @@ async function ConsultDetail({ id, lang, t }: { id: string; lang: Lang; t: H3Dic
           {c.patients?.birth_year ? <span className="text-muted-foreground">{fmt(t.queue.age, { n: new Date().getFullYear() - c.patients.birth_year })} · {c.patients.country}</span> : null}
           <Badge variant={c.status === "in_call" ? "destructive" : "secondary"}>{label(L.status, c.status)}</Badge>
         </div>
-        <CallControls consultationId={c.id} status={c.status} doctorUrl={doctorUrl} interpreterUrl={interpreterUrl} t={t.call} />
+        <CallControls consultationId={c.id} status={c.status} doctorUrl={doctorUrl} t={t.call} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">

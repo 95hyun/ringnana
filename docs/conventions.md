@@ -1,7 +1,7 @@
 # 코드·git 규칙
 
 ## git
-- 브랜치: 해커톤이므로 `main` 직접 커밋을 허용한다. 충돌을 피하려고 **폴더 단위로 소유**를 나눈다 (`apps/video` = 화상 팀원, 나머지 = 플랫폼).
+- 브랜치: 해커톤이므로 `main` 직접 커밋을 허용한다. 충돌을 피하려고 **폴더 단위로 소유**를 나눈다 (화상 진료 코드 `apps/web/video`·`apps/web/app/video`·`apps/web/app/api` = 화상 팀원, 나머지 = 플랫폼).
 - 커밋 전 `git pull --rebase`.
 - 커밋 메시지: `feat(web): …`, `fix(video): …`, `docs: …` — 스코프는 폴더 이름.
 - 비밀값 커밋 금지 (`.env*`는 `.env.example`만 추적).

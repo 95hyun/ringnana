@@ -11,10 +11,13 @@ export type RoomUrlInput = {
   returnUrl?: string;
 };
 
-// NEXT_PUBLIC_VIDEO_BASE_URL 미설정이면 null — 화면은 입장 버튼을 끄고 안내만 한다
-export function buildRoomUrl({ sessionId, role, name, lang, returnUrl }: RoomUrlInput): string | null {
-  const base = process.env.NEXT_PUBLIC_VIDEO_BASE_URL;
-  if (!base) return null;
+// 화상 진료는 이 앱의 /video 아래에 있다. NEXT_PUBLIC_VIDEO_BASE_URL이 있으면 그 주소(별도로 띄운 화상 앱)를 쓴다
+export function videoBaseUrl(origin: string): string {
+  return process.env.NEXT_PUBLIC_VIDEO_BASE_URL || new URL("/video", origin).toString();
+}
+
+export function buildRoomUrl({ sessionId, role, name, lang, returnUrl }: RoomUrlInput, origin: string): string {
+  const base = videoBaseUrl(origin);
   const url = new URL(`room/${encodeURIComponent(sessionId)}`, base.endsWith("/") ? base : `${base}/`);
   url.searchParams.set("role", role);
   if (name) url.searchParams.set("name", name);

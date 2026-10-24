@@ -1,6 +1,6 @@
 # 1:1 화상 진료 (video)
 
-> 소유: **화상통화 담당(`apps/video`)**. 플랫폼과 맞닿는 부분은 [video-integration.md](video-integration.md) 계약을 따른다.
+> 소유: **화상통화 담당** — 화상 진료 코드(`apps/web/video/`, `apps/web/app/video/`, `apps/web/app/api/`, `apps/web/public/mediapipe/`). 플랫폼 앱 안 `/video`에서 돈다(배포 하나). 플랫폼과 맞닿는 부분은 [video-integration.md](video-integration.md) 계약을 따른다.
 > 상태: 초안 (2026-10-24). 플랫폼 쪽 확인이 필요한 항목은 [requests.md](requests.md)에 남겼다.
 > 이 문서 하나에 1:1 화상 진료의 통화·얼굴 촬영·실시간 통역을 모두 적는다.
 
@@ -51,7 +51,7 @@
   - **예시 문장 버튼:** 환자 창에는 일본어, 의사 창에는 한국어 예시 문장 버튼이 있다. 누르면 말한 것과 똑같이 번역·방송된다. [통역]이 꺼져 있으면 누를 수 없다. 문장 목록은 `lib/config.ts`의 `demo.phrases`.
   - 화면 위쪽에 "시연 모드" / 「デモモード」 표시.
 - **촬영:** 동작은 같고, 같은 웹캠을 두 창이 함께 쓴다. 두 창은 탭이 아니라 **나란히 띄운 창**이어야 한다(가려진 탭은 Chrome이 화면 갱신을 늦춰 얼굴 분석이 멈춘다).
-- **실행:** 이 PC에서 `https://localhost:3001`로 연다. 중계 서버는 필요 없지만 Supabase(실시간·저장)와 번역 API를 쓰므로 인터넷은 필요하다.
+- **실행:** 배포본(`/ko/clinic` → 진료 상세 → [화상 진료 시작]) 또는 로컬 `pnpm dev`(`http://localhost:3000`)에서 연다. 중계 서버는 필요 없지만 Supabase(실시간·저장)와 번역 API를 쓰므로 인터넷은 필요하다.
 
 ## 4. 통화 공통 화면 규칙
 - 카메라·마이크는 한 번만 요청한다(1920×1080 우선, 안 되면 1280×720, 그것도 안 되면 카메라가 주는 해상도). 같은 영상을 통화와 촬영에, 같은 마이크를 통화와 통역에 쓴다.
@@ -231,12 +231,12 @@ Web Speech API(STT, 내 언어) ─확정 문장→ POST /api/translate ─번�
 - 같은 역할은 한 번에 한 창만 통화에 참여한다.
 
 ## 9. 실행 환경
-- video 앱은 `apps/video`에서 3001 포트로 띄운다. 노트북 2대에서 카메라를 쓰려면 HTTPS가 필요하다. 개발 서버를 HTTPS와 외부 접속 허용으로 띄우고(`next dev --experimental-https -H 0.0.0.0 -p 3001`에 해당), 다른 노트북은 `https://{IP}:3001`로 들어온다. LAN IP 접속 때 개발 리소스가 막히지 않도록 허용할 접속 주소를 환경변수로 받아 Next.js 설정에 넣는다. 소견 번역 기능에 CORS로 허용할 플랫폼 출처도 환경변수로 받는다. 플랫폼의 `NEXT_PUBLIC_VIDEO_BASE_URL`도 이 주소로 맞춘다.
+- 화상 진료는 플랫폼 앱(`apps/web`) 안 `/video` 아래에서 돈다. 배포본은 Vercel 배포 하나로 끝나고(HTTPS), 플랫폼은 같은 출처의 `/video/room/...`으로 입장시킨다. 로컬에서 노트북 2대로 시연할 때는 카메라에 HTTPS가 필요해 `apps/web`에서 `pnpm dev:https`(HTTPS + 외부 접속 허용)로 띄우고 다른 노트북은 `https://{IP}:3000`으로 들어온다. LAN IP 접속 때 개발 리소스가 막히지 않도록 허용 호스트를 `ALLOWED_DEV_ORIGINS`로 받는다. 화상 앱을 따로 띄우는 경우에만 `NEXT_PUBLIC_VIDEO_BASE_URL`과 CORS 허용 출처(`ALLOWED_PLATFORM_ORIGINS`)를 쓴다.
 - 네트워크는 같은 와이파이를 기본으로 쓴다. 기기 간 직접 연결이 막히면 중계 서버(설정했으면 자동), 휴대폰 핫스팟, 그것도 안 되면 Vercel 배포본 순으로 대비한다.
 - Chrome 데스크톱만 지원한다. Web Speech API 인식은 음성을 Google 서버로 보내 처리하므로 인터넷이 필요하다. 시드 데이터는 가상 인물이라 데모에는 문제없지만, 실제 서비스에서는 의료 음성 데이터 처리 검토가 필요하다.
 - **양쪽 모두 이어폰을 쓴다.** 같은 공간에서 소리가 되울리고, 상대 원음·번역 음성이 내 마이크로 들어가면 통역 인식이 섞인다.
 - 시연에는 팀원 얼굴만 쓰고, 해커톤이 끝나면 사진 행과 버킷 파일을 직접 지운다(행 삭제만으로 파일은 지워지지 않는다).
-- 환경변수(`apps/video/.env.local`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`(서버 전용), 허용 개발 접속 주소, 허용 플랫폼 출처, 중계 서버 `TURN_URLS`·`TURN_USERNAME`·`TURN_CREDENTIAL`(선택 — 클라우드 중계 서비스 계정은 사용자가 준비). 플랫폼과 같은 Supabase 프로젝트를 쓴다. 키 이름만 `.env.example`에 둔다.
+- 환경변수(`apps/web/.env.local`, 배포본은 Vercel 프로젝트 설정): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`(서버 전용), 허용 개발 접속 주소, 중계 서버 `TURN_URLS`·`TURN_USERNAME`·`TURN_CREDENTIAL`(선택 — 클라우드 중계 서비스 계정은 사용자가 준비). 플랫폼과 같은 Supabase 프로젝트를 쓴다. 키 이름만 `.env.example`에 둔다.
 
 ## 10. 설정값 (한 곳에 모음, 모두 현장 조정 가능)
 
@@ -266,7 +266,7 @@ Web Speech API(STT, 내 언어) ─확정 문장→ POST /api/translate ─번�
   - 환자 화면 언어: 진료방마다 따로 기억, 새 진료방은 `lang`으로 시작
   - 시연 모드: `demo=1` 판정, 상대 역할 창 감지·닫힘·신호 끊김, 듣기 잠금(한 창이 듣는 동안 다른 창 잠김·해제·시간 초과), 예시 문장이 번역 → 방송 흐름으로 들어감
 - 동작 확인은 아래 점검표로 사람이 노트북 2대에서 한다(사람 확인이 최종 근거).
-- [ ] 다른 노트북에서 `https://{IP}:3001` 접속(Chrome), 카메라·마이크 허용
+- [ ] 다른 노트북에서 `https://{IP}:3000` 접속(Chrome, 로컬 `pnpm dev:https`) 또는 배포본 접속, 카메라·마이크 허용
 - [ ] 의원 콘솔·환자 화면에서 입장 → 1:1 영상·음성 연결
 - [ ] 의사 한국어 → 환자 화면 일본어 자막 + 일본어 음성, 원문 함께 표시
 - [ ] 환자 일본어 → 의사 화면 한국어 자막 + 한국어 음성
@@ -307,5 +307,6 @@ Web Speech API(STT, 내 언어) ─확정 문장→ POST /api/translate ─번�
 - 2026-10-24 서로 다르던 결정은 촬영 단독본 기준으로 확정: 미리보기·장별 재촬영 후 3장 일괄 제출, 동의 필수, 환자 화면 ja/ko 전환, 셔터 효과, 자동 검사. 소견 자동 번역은 플랫폼 요청(§5.7)
 - 2026-10-24 플랫폼 최신(origin/my) 반영 + 결정 추가: 표준 사진 담당, 동의 시각 저장, 양쪽 통화 종료(의사 종료 시 함께 이동), 의사만 촬영 취소, 소견 번역은 화상 앱 서버가 제공(콘솔 브라우저 호출, 번역한 원문 함께 저장), 경과 비교 기준 = 통화 정면 사진, 통역 언어 역할 고정, 같은 역할 새 창 우선, 화면 언어는 진료방별 기억, `/check`는 시간이 남으면
 - 2026-10-24 연결: 직접 연결 + 중계 서버(TURN)는 설정이 있을 때만 (별도 미디어 서버는 이후)
+- 2026-10-24 화상 앱을 플랫폼 앱 안 `/video`로 합침(별도 배포 없음). 코드 `apps/web/video`, 화면 `app/video`, 서버 `app/api`, 얼굴 모델 `public/mediapipe`
 - 2026-10-24 한 대 시연 모드 추가(§3.1): `demo=1` 또는 같은 브라우저의 상대 역할 창이면 원음 끄기, 누르고 말하기, 창 사이 듣기 잠금, 예시 문장 버튼
 - 2026-10-24 구현 반영: `apps/video` 완성(통화·촬영·통역·소견 번역·점검 화면). 세부 동작(환자 종료도 제출 대기, returnUrl은 http(s)만, TURN은 세 값 모두 있을 때, 제출 중 취소 무시, 읽기 직후 0.6초 인식 버림)을 본문에 맞춤. 실행 방법은 `apps/video/README.md`, 사람 점검표는 `apps/video/docs/demo-checklist.md`

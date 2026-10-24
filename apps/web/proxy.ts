@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { DEFAULT_LANG, isLang } from "@/lib/i18n";
 
-// 언어 구간 없는 경로 → /jp/... (docs/i18n.md). /api·/dev·정적 파일은 matcher에서 제외
+// 언어 구간 없는 경로 → /jp/... (docs/i18n.md). /api·/dev·/video(화상 진료)·정적 파일은 matcher에서 제외
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const first = pathname.split("/")[1] ?? "";
@@ -13,5 +13,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!(?:api|dev)(?:/|$)|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+  matcher: ["/((?!(?:api|dev|video)(?:/|$)|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

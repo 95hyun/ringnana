@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 외부에서 가져온 MediaPipe 실행 파일 (화상 진료 얼굴 분석)
+    "public/mediapipe/**",
   ]),
 ]);
 

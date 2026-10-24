@@ -72,7 +72,7 @@ async function ConsultDetail({ id, lang, t, dict }: { id: string; lang: Lang; t:
 
   const origin = await requestOrigin();
   const sessionId = c.video_session_id;
-  const doctorUrl = buildRoomUrl({ sessionId, role: "doctor", name: c.doctors?.name ?? tc.doctorFallback, lang: "ko", returnUrl: platformUrl(href(lang, `/clinic/consult/${id}?ended=1`), origin) });
+  const doctorUrl = buildRoomUrl({ sessionId, role: "doctor", name: c.doctors?.name ?? tc.doctorFallback, lang: "ko", returnUrl: platformUrl(href(lang, `/clinic/consult/${id}?ended=1`), origin) }, origin);
 
   const intake = c.intakes;
   // 문진 응답 원본(jsonb) — 예/아니오 전체를 보여 준다. 없는 키는 미응답(H2 문항 추가 이전 데이터)

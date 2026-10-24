@@ -13,7 +13,7 @@ import { StepIndicator } from "./StepIndicator";
 type Text = Messages<typeof CaptureText>;
 
 // 찍은 직후 ✔를 보여 주고 다음 단계 판단을 시작하기까지의 쉼
-const STEP_COOLDOWN_MS = 900;
+const STEP_COOLDOWN_MS = config.capture.stepCooldownMs;
 
 const round1 = (v: number | null) => (v === null ? null : Math.round(v * 10) / 10);
 

@@ -6,7 +6,7 @@
 
 ```
 apps/video/
-├── AGENTS.md / CLAUDE.md        → 이 안내 (두 파일 내용 동일)
+├── AGENTS.md / CLAUDE.md
 ├── README.md                    → 실행·환경변수·중계 서버 준비·현장 조정
 ├── docs/demo-checklist.md       → 노트북 2대 사람 점검표 (동작의 최종 근거)
 ├── app/
@@ -39,7 +39,7 @@ apps/video/
 ```
 
 ## 반드시 지킬 것
-- **수정 범위는 `apps/video/`뿐이다.** `apps/web/`, `supabase/`(스키마)는 플랫폼 소유라 손대지 않는다. 스키마가 필요하면 레포 `docs/requests.md`에 플랫폼 H1 요청을 쓰고, 플랫폼과의 약속이 바뀌면 코드보다 `docs/video-integration.md`를 먼저 고친 뒤 사용자에게 알린다.
+- **수정 범위는 `apps/video/`와 레포 `docs/`의 화상 문서 세 개(`video.md`, `video-integration.md`, `requests.md`)뿐이다.** `apps/web/`, `supabase/`(스키마)와 그 밖의 `docs/`는 플랫폼 소유라 손대지 않는다. 스키마가 필요하면 레포 `docs/requests.md`에 플랫폼 H1 요청을 쓰고, 플랫폼과의 약속이 바뀌면 코드보다 `docs/video-integration.md`를 먼저 고친 뒤 사용자에게 알린다.
 - **저장 사진은 좌우 반전하지 않은 원본이고, `left`/`right`는 환자 본인 기준이다.** yaw 양수 = 환자가 자기 왼쪽으로 돌림. 화면 미리보기만 거울 반전한다.
 - **제출된 촬영 회차는 항상 front·left·right 3장이고, 바뀌지 않으며, 같은 회차로 두 번 저장되지 않는다.** 3장이 안 된 회차는 저장하지 않는다.
 - **환자에게 보이는 소견 번역은 항상 현재 원문의 번역이다.** 번역 결과는 원문이 그대로일 때만 저장하고, 번역한 원문(`notes_ja_source`)을 함께 남긴다.
@@ -117,7 +117,6 @@ apps/video/
   - 자동 검사에서 `server-only` 모듈(`lib/translate`, `lib/translate/claude`, Supabase 저장소)을 불러올 때는 `vi.mock("server-only", () => ({}))`가 먼저 필요하다.
   - 처리기는 모두 저장소·번역기를 주입받으므로, 검사는 메모리 저장소와 `createFakeTranslator`로 한다.
 - **시간 제한:** 소견 번역의 시간 제한은 처리기의 경쟁(30초)과 SDK 요청 시간 제한 두 겹이다. 통역은 서버 3초, 클라이언트 6초다.
-- **개발 서버와 이 파일:** `next dev`는 이 파일 아래의 Next.js 안내 블록을 자동으로 다시 쓴다. CLAUDE.md도 같은 내용으로 맞춰 커밋한다.
 
 ## 검사
 - 명령: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`(모두 `apps/video`에서). 모두 성공해야 한다.

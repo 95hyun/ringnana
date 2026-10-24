@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { config } from "@/lib/config";
 import type { RoomContext } from "@/lib/contracts";
 import {
   CAPTURE_ORDER,
@@ -17,7 +18,7 @@ import { StepIndicator } from "./StepIndicator";
 import { useFaceAnalyzer } from "./useFaceAnalyzer";
 
 // 제출이 끝나지 않으면 통화 종료가 영영 막히므로 상한을 둔다 (config 에 없는 값)
-const SUBMIT_TIMEOUT_MS = 30000;
+const SUBMIT_TIMEOUT_MS = config.capture.submitTimeoutMs;
 
 type State = PatientState<Blob>;
 const NUM = ["①", "②", "③"];

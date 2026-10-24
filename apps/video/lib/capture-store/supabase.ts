@@ -4,7 +4,7 @@ import { PHOTO_BUCKET, type CallPhotoRow, type ConsultationRow } from "@/lib/sup
 import type { CaptureStore } from "./types";
 
 const PHOTO_COLUMNS =
-  "id, created_at, patient_id, intake_id, consultation_id, source, capture_batch_id, angle, storage_path, capture_mode, quality_ok, yaw, pitch, consented_at";
+  "id, created_at, patient_id, intake_id, consultation_id, source, capture_batch_id, angle, storage_path, capture_mode, quality_ok, yaw, pitch";
 
 // numeric 칸은 문자열로 올 수도 있어 숫자로 맞춘다
 const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));

@@ -12,6 +12,10 @@ export const config = {
     holdMs: 1000,
     manualAfterMs: 15000,
     jpegQuality: 0.92,
+    // ✔ 표시 후 다음 단계 판단을 시작하기까지 쉬는 시간
+    stepCooldownMs: 900,
+    // 제출 요청 상한 — 멈추면 통화 종료 대기도 함께 막히므로 끊는다
+    submitTimeoutMs: 30000,
   },
   media: {
     idealWidths: [1920, 1280] as const,

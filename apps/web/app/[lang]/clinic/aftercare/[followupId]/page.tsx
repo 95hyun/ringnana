@@ -10,7 +10,8 @@ import { patientName, treatmentName } from "@/lib/localize";
 import { supabaseServer } from "@/lib/supabase/server";
 import { signedPhotoUrls } from "@/lib/supabase/storage";
 import { dueDate, parseSymptoms } from "@/app/[lang]/(patient)/aftercare/_components/checkin";
-import { fill, formatShortDate, parseItems } from "@/app/[lang]/(patient)/quote/_components/format";
+import { fill, formatDateShort } from "@/lib/format";
+import { parseItems } from "@/app/[lang]/(patient)/quote/_components/format";
 import { h4Context } from "@/app/[lang]/(patient)/quote/_components/i18n";
 import { ReviewForm } from "../_components/review-form";
 
@@ -74,8 +75,8 @@ async function CheckinDetail({ params }: { params: Promise<{ followupId: string 
     items
       .map((i) => `${treatmentName(i, lang, { common }) ?? c.treatmentFallback}${i.sessions ? fill(c.sessions, { n: i.sessions }) : ""}`)
       .join(", "),
-    fill(c.visitDates, { dates: visits.map(formatShortDate).join(", ") }),
-    due && fill(c.dueOn, { date: formatShortDate(due) }),
+    fill(c.visitDates, { dates: visits.map((d) => formatDateShort(d, lang)).join(", ") }),
+    due && fill(c.dueOn, { date: formatDateShort(due, lang) }),
     consult.patients.birth_year && fill(c.born, { year: consult.patients.birth_year }),
   ].filter(Boolean);
 

@@ -9,7 +9,8 @@ import { href } from "@/lib/i18n";
 import { treatmentName } from "@/lib/localize";
 import { supabaseServer } from "@/lib/supabase/server";
 import { viewerPatientId } from "../quote/_components/viewer";
-import { fill, formatDate, parseItems, todaySeoul } from "../quote/_components/format";
+import { fill, formatDate, formatDateShort } from "@/lib/format";
+import { parseItems, todaySeoul } from "../quote/_components/format";
 import { h4Context } from "../quote/_components/i18n";
 import { dueDate } from "./_components/checkin";
 
@@ -37,7 +38,7 @@ const STATUS_VARIANT: Record<string, "outline" | "secondary" | "default"> = {
 
 async function AftercareList() {
   await connection();
-  const { lang, locale, t, common } = await h4Context();
+  const { lang, t, common } = await h4Context();
   const db = supabaseServer();
   const patientId = await viewerPatientId();
   // 환자의 진료 → 견적 → 예약 순으로 따라간다
@@ -74,7 +75,7 @@ async function AftercareList() {
             <CardHeader>
               <CardTitle>{fill(t.aftercare.actionTitle, { n: f.dueDay })}</CardTitle>
               <CardDescription className={overdue ? "font-medium text-destructive" : "font-medium text-primary"}>
-                {overdue ? fill(t.aftercare.overdue, { date: formatDate(locale, f.date) }) : t.aftercare.dueToday}
+                {overdue ? fill(t.aftercare.overdue, { date: formatDate(f.date, lang) }) : t.aftercare.dueToday}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
@@ -96,7 +97,7 @@ async function AftercareList() {
             <CardHeader>
               <CardTitle>{title}</CardTitle>
               <CardDescription>
-                {fill(t.aftercare.visits, { dates: visits.map((d) => formatDate(locale, d)).join("・") || "—" })}
+                {fill(t.aftercare.visits, { dates: visits.map((d) => formatDateShort(d, lang)).join(" / ") || "—" })}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
@@ -113,7 +114,7 @@ async function AftercareList() {
                       <span className="font-medium">{fill(t.aftercare.dayN, { n: f.due_day })}</span>
                       {due && (
                         <span className="ml-2 text-sm text-muted-foreground">
-                          {fill(t.aftercare.around, { date: formatDate(locale, due) })}
+                          {fill(t.aftercare.around, { date: formatDateShort(due, lang) })}
                         </span>
                       )}
                     </span>

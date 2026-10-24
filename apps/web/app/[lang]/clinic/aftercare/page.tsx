@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { connection } from "next/server";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,7 +9,8 @@ import { href } from "@/lib/i18n";
 import { patientName, treatmentName } from "@/lib/localize";
 import { supabaseServer } from "@/lib/supabase/server";
 import { dueDate, parseSymptoms } from "@/app/[lang]/(patient)/aftercare/_components/checkin";
-import { formatShortDate, parseItems } from "@/app/[lang]/(patient)/quote/_components/format";
+import { formatDateShort } from "@/lib/format";
+import { parseItems } from "@/app/[lang]/(patient)/quote/_components/format";
 import { h4Context } from "@/app/[lang]/(patient)/quote/_components/i18n";
 
 export default async function ClinicAftercarePage() {
@@ -63,16 +65,17 @@ async function CheckinTable() {
           const highlight = f.alert && f.status === "submitted";
           const detail = href(lang, `/clinic/aftercare/${f.id}`);
           return (
-            <TableRow key={f.id} className={highlight ? "bg-destructive/5" : undefined}>
+            // 행 전체 클릭 = 이름 링크를 행 크기로 늘린다(tr은 a로 감쌀 수 없음)
+            <TableRow key={f.id} className={`relative cursor-pointer hover:bg-muted/50 ${highlight ? "bg-destructive/5" : ""}`}>
               <TableCell className="font-medium">
-                <Link href={detail} className="hover:underline">
+                <Link href={detail} className="after:absolute after:inset-0 hover:underline">
                   {patientName(f.bookings.quotes.consultations.patients)}
                 </Link>
               </TableCell>
               <TableCell>{items.map((i) => treatmentName(i, lang, { common })).filter(Boolean).join(", ") || "—"}</TableCell>
               <TableCell>
                 D+{f.due_day}
-                {due && <span className="ml-1 text-muted-foreground">({formatShortDate(due)})</span>}
+                {due && <span className="ml-1 text-muted-foreground">({formatDateShort(due, lang)})</span>}
               </TableCell>
               <TableCell>
                 {symptoms.length ? (
@@ -82,11 +85,12 @@ async function CheckinTable() {
                 )}
               </TableCell>
               <TableCell>
-                <Link href={detail}>
+                <span className="flex items-center justify-between gap-2">
                   <Badge variant={highlight ? "destructive" : f.status === "submitted" ? "secondary" : "outline"}>
                     {highlight ? c.alertBadge : f.status === "submitted" ? c.status.submitted : c.status.reviewed}
                   </Badge>
-                </Link>
+                  <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+                </span>
               </TableCell>
             </TableRow>
           );

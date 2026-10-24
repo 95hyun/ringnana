@@ -10,12 +10,9 @@ import { href } from "@/lib/i18n";
 import { localized, treatmentName } from "@/lib/localize";
 import { supabaseServer } from "@/lib/supabase/server";
 import { viewerPatientId } from "../_components/viewer";
+import { fill, formatDate, formatMoney, formatQuotePrice } from "@/lib/format";
+import { CLINIC_CURRENCY } from "@/lib/market";
 import {
-  KRW_TO_JPY,
-  approxJpy,
-  fill,
-  formatDate,
-  formatKrw,
   parseItems,
   suggestedDates,
   totalSessions,
@@ -42,12 +39,12 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
   await connection();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const { lang, locale, t, common } = await h4Context();
+  const { lang, t, common } = await h4Context();
 
   const db = supabaseServer();
   const { data: consult } = await db
     .from("consultations")
-    .select("id, patient_id, intake_id, doctors(name_ja, name, clinics(name, name_ja))")
+    .select("id, patient_id, intake_id, notes, doctors(name_ja, name, clinics(name, name_ja))")
     .eq("id", id)
     .maybeSingle();
   // 본인 진료만 보여준다
@@ -85,9 +82,20 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
   const today = todaySeoul();
   const expired = quote.status === "confirmed" && !!quote.valid_until && quote.valid_until < today;
   const doctor = consult.doctors;
+  const price = formatQuotePrice(quote.total_krw, lang, { common });
 
   return (
     <>
+      {/* 소견 = consultations.notes (H3 견적 작성 화면에서 의사가 입력한 원문, 번역은 범위 밖) */}
+      {consult.notes?.trim() && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.quote.doctorNotes}</CardTitle>
+            <CardDescription>{t.quote.doctorNotesHint}</CardDescription>
+          </CardHeader>
+          <CardContent className="whitespace-pre-wrap text-sm">{consult.notes}</CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>{localized(doctor?.clinics, lang) ?? t.quote.clinicFallback}</CardTitle>
@@ -105,7 +113,7 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
                 </span>
                 {typeof item.price_krw === "number" && (
                   <span className="tabular-nums">
-                    {formatKrw(item.price_krw)}
+                    {formatMoney(item.price_krw, CLINIC_CURRENCY, lang)}
                     <span className="text-muted-foreground">{t.quote.perSession}</span>
                   </span>
                 )}
@@ -115,17 +123,20 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
           <Separator />
           <div className="flex items-baseline justify-between">
             <span className="font-medium">{t.quote.total}</span>
+            {/* 시장 통화 참고가를 크게, 결제 통화 확정가를 병기 (ux-review A3) */}
             <span className="text-right">
-              <span className="block text-2xl font-bold tabular-nums">{formatKrw(quote.total_krw)}</span>
+              <span className="block text-2xl font-bold tabular-nums">{price.primary}</span>
               <span className="text-sm text-muted-foreground">
-                {fill(t.quote.approxJpy, { amount: approxJpy(quote.total_krw) })}
+                {t.quote.settlementLabel} <span className="font-medium tabular-nums text-foreground">{price.settlement}</span>
               </span>
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">{fill(t.quote.priceNote, { rate: KRW_TO_JPY })}</p>
+          <p className="text-xs text-muted-foreground">
+            {t.quote.priceNote} {price.rateNote}
+          </p>
           {quote.valid_until && (
             <p className="text-xs text-muted-foreground">
-              {fill(t.quote.validUntil, { date: formatDate(locale, quote.valid_until) })}
+              {fill(t.quote.validUntil, { date: formatDate(quote.valid_until, lang) })}
             </p>
           )}
         </CardContent>
@@ -142,7 +153,7 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
             <ol className="flex flex-col gap-1 text-sm">
               {[...booking.visit_dates].sort().map((d, i) => (
                 <li key={d}>
-                  {fill(t.quote.visitN, { n: i + 1 })}: <span className="font-medium">{formatDate(locale, d)}</span>
+                  {fill(t.quote.visitN, { n: i + 1 })}: <span className="font-medium">{formatDate(d, lang)}</span>
                 </li>
               ))}
             </ol>
@@ -166,7 +177,7 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
           tripEnd={intake.trip_end}
           sessions={sessions}
           suggested={suggestedDates(items, intake.trip_start, intake.trip_end, sessions)}
-          locale={locale}
+          lang={lang}
           t={t.booking}
           errors={t.errors}
         />

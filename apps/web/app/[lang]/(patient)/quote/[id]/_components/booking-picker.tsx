@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "cn";
 import type { H4Dict } from "../../_components/i18n";
-import { daysBetween, fill, formatDate } from "../../_components/format";
+import { fill, formatDate, formatDateShort } from "@/lib/format";
+import type { Lang } from "@/lib/i18n";
+import { daysBetween } from "../../_components/format";
 import { bookQuote } from "../actions";
 
 export function BookingPicker({
@@ -15,7 +17,7 @@ export function BookingPicker({
   tripEnd,
   sessions,
   suggested,
-  locale,
+  lang,
   t,
   errors,
 }: {
@@ -24,7 +26,7 @@ export function BookingPicker({
   tripEnd: string;
   sessions: number;
   suggested: string[];
-  locale: string;
+  lang: Lang;
   t: H4Dict["booking"];
   errors: H4Dict["errors"];
 }) {
@@ -50,7 +52,7 @@ export function BookingPicker({
       <CardHeader>
         <CardTitle>{t.title}</CardTitle>
         <CardDescription>
-          {fill(t.description, { start: formatDate(locale, tripStart), end: formatDate(locale, tripEnd), n: sessions })}
+          {fill(t.description, { start: formatDate(tripStart, lang), end: formatDate(tripEnd, lang), n: sessions })}
           {suggested.length > 0 && t.suggestedNote}
         </CardDescription>
       </CardHeader>
@@ -72,7 +74,7 @@ export function BookingPicker({
                 )}
               >
                 <span className="text-xs opacity-80">{fill(t.tripDay, { n: i + 1 })}</span>
-                <span className="font-medium">{formatDate(locale, day)}</span>
+                <span className="font-medium">{formatDateShort(day, lang)}</span>
                 <span className="text-xs">
                   {on ? fill(t.order, { n: order + 1 }) : ""}
                   {suggested.includes(day) && <span className="ml-1 opacity-80">{t.suggested}</span>}

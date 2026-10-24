@@ -8,7 +8,7 @@ import { href } from "@/lib/i18n";
 import { supabaseServer } from "@/lib/supabase/server";
 import { signedPhotoUrl } from "@/lib/supabase/storage";
 import { viewerPatientId } from "../../quote/_components/viewer";
-import { fill, formatDate } from "../../quote/_components/format";
+import { fill, formatDate } from "@/lib/format";
 import { h4Context } from "../../quote/_components/i18n";
 import { dueDate, parseSymptoms } from "../_components/checkin";
 import { CheckinForm } from "../_components/checkin-form";
@@ -31,7 +31,7 @@ async function CheckinContent({ params }: { params: Promise<{ followupId: string
   await connection();
   const { followupId } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(followupId)) notFound();
-  const { locale, t } = await h4Context();
+  const { lang, t } = await h4Context();
 
   const db = supabaseServer();
   const { data: f } = await db
@@ -47,7 +47,7 @@ async function CheckinContent({ params }: { params: Promise<{ followupId: string
   const heading = (
     <div>
       <h1 className="text-xl font-bold">{fill(t.checkin.title, { n: f.due_day })}</h1>
-      {due && <p className="text-sm text-muted-foreground">{fill(t.checkin.due, { date: formatDate(locale, due) })}</p>}
+      {due && <p className="text-sm text-muted-foreground">{fill(t.checkin.due, { date: formatDate(due, lang) })}</p>}
     </div>
   );
 

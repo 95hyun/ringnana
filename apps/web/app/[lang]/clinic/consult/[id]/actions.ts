@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { DEMO_DOCTOR_ID } from "@/lib/demo";
+import { isTreatmentCode } from "@/lib/localize";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { QuoteItem } from "../../_components/quote-types";
 
@@ -43,6 +44,7 @@ export type ActionResult = { ok: true } | { ok: false; code: "noItems" | "locked
 export async function saveQuote(consultationId: string, input: QuoteInput): Promise<ActionResult> {
   const items = input.items
     .map((i) => ({
+      ...(isTreatmentCode(i.code) ? { code: i.code } : {}),
       name: i.name.trim(),
       name_ja: i.name_ja.trim(),
       sessions: Math.max(1, Math.floor(Number(i.sessions) || 1)),
@@ -66,6 +68,9 @@ export async function saveQuote(consultationId: string, input: QuoteInput): Prom
 
   const { error: notesError } = await db.from("consultations").update({ notes: input.notes }).eq("id", consultationId);
   if (notesError) return { ok: false, code: "db", detail: notesError.message };
+  // 견적을 쓰는 의사 = 담당의. 미배정 요청(H2 생성)도 여기서 배정해야 환자 견적에 의사·의원이 나온다 (ux-review E3)
+  const { error: doctorError } = await db.from("consultations").update({ doctor_id: DEMO_DOCTOR_ID }).eq("id", consultationId).is("doctor_id", null);
+  if (doctorError) return { ok: false, code: "db", detail: doctorError.message };
 
   const row = {
     items,

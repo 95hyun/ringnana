@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,10 +26,19 @@ export function QuoteForm({ consultationId, initialNotes, initialItems, initialV
   const [items, setItems] = useState<QuoteItem[]>(initialItems);
   const [validUntil, setValidUntil] = useState(initialValidUntil);
   const [pending, startTransition] = useTransition();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const total = items.reduce((s, i) => s + i.sessions * i.price_krw, 0);
   const update = (idx: number, patch: Partial<QuoteItem>) =>
-    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+    setItems((prev) =>
+      prev.map((it, i) => {
+        if (i !== idx) return it;
+        const next = { ...it, ...patch };
+        // 시술명을 고치면 프리셋이 아니다 — code를 떼야 환자 화면이 사전 이름 대신 고친 이름을 보여 준다
+        if ("name" in patch || "name_ja" in patch) delete next.code;
+        return next;
+      }),
+    );
   const toggleDay = (idx: number, day: number) =>
     setItems((prev) =>
       prev.map((it, i) =>
@@ -37,9 +47,9 @@ export function QuoteForm({ consultationId, initialNotes, initialItems, initialV
     );
 
   const submit = (confirm: boolean) => {
-    if (confirm && !window.confirm(t.confirmPrompt)) return;
     startTransition(async () => {
       const res = await saveQuote(consultationId, { notes, items, validUntil: validUntil || null, confirm });
+      setConfirmOpen(false);
       if (res.ok) toast.success(confirm ? t.confirmedToast : t.savedToast);
       else toast.error(res.detail ? `${t.errors[res.code]} ${res.detail}` : t.errors[res.code]);
     });
@@ -121,10 +131,38 @@ export function QuoteForm({ consultationId, initialNotes, initialItems, initialV
         <Button variant="outline" size="lg" disabled={pending} onClick={() => submit(false)}>
           {t.saveDraft}
         </Button>
-        <Button size="lg" disabled={pending || items.length === 0} data-confirm-quote onClick={() => submit(true)}>
+        <Button size="lg" disabled={pending || items.length === 0} data-confirm-quote onClick={() => setConfirmOpen(true)}>
           {t.confirm}
         </Button>
       </div>
+      <Dialog open={confirmOpen} onOpenChange={(open) => !pending && setConfirmOpen(open)}>
+        <DialogContent data-confirm-dialog>
+          <DialogHeader>
+            <DialogTitle>{t.confirmTitle}</DialogTitle>
+            <DialogDescription>{t.confirmPrompt}</DialogDescription>
+          </DialogHeader>
+          <ul className="flex flex-col gap-1 text-sm">
+            {items.map((it, idx) => (
+              <li key={idx} className="flex justify-between">
+                <span>{it.name || "—"} × {it.sessions}</span>
+                <span>{formatKrw(it.sessions * it.price_krw)}</span>
+              </li>
+            ))}
+            <li className="flex justify-between border-t pt-1 font-bold">
+              <span />
+              <span>{fmt(t.total, { amount: formatKrw(total) })}</span>
+            </li>
+          </ul>
+          <DialogFooter>
+            <Button variant="outline" disabled={pending} onClick={() => setConfirmOpen(false)}>
+              {t.cancel}
+            </Button>
+            <Button disabled={pending} data-confirm-quote-ok onClick={() => submit(true)}>
+              {t.confirm}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

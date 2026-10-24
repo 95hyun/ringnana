@@ -35,6 +35,27 @@ export const config = {
     effort: "medium" as const,
     timeoutMs: 30000,
   },
+  // spec §16 한 대 시연 모드
+  demo: {
+    heartbeatMs: 1000,
+    // 상대 창 신호가 이 시간 동안 없으면 닫힌 것으로 본다
+    peerTimeoutMs: 3500,
+    // 듣기 잠금 해제 알림을 놓쳐도 이 시간 뒤에는 풀린다
+    listenLockMaxMs: 15000,
+    phrases: {
+      patient: [
+        "施術後に赤みは出ますか？",
+        "何回くらい通えばいいですか？",
+        "日焼け止めは使ってもいいですか？",
+        "帰国してからのケアはどうすればいいですか？",
+      ],
+      doctor: [
+        "시술 후 이틀 정도 붉은기가 있을 수 있습니다.",
+        "레이저 토닝은 2주 간격으로 5회를 권합니다.",
+        "시술 당일부터 자외선 차단제를 발라 주세요.",
+      ],
+    },
+  },
   ice: {
     publicStun: ["stun:stun.l.google.com:19302"],
   },

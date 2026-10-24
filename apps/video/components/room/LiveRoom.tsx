@@ -4,6 +4,7 @@ import { CaptureSlot } from "@/components/capture/CaptureSlot";
 import { InterpSlot } from "@/components/interp/InterpSlot";
 import type { IceResponse, RoomContext, RoomEvent, UiLang } from "@/lib/contracts";
 import { config } from "@/lib/config";
+import { isDemoMode, openLocalLink, trackPeerWindow } from "@/lib/room/demo";
 import { buildIceServers } from "@/lib/room/ice";
 import { callAlert as jaAlert } from "@/messages/ja/call";
 import { callAlert as koAlert } from "@/messages/ko/call";
@@ -37,7 +38,7 @@ export function LiveRoom({
   onLeave: () => void;
   onSuperseded: () => void;
 }) {
-  const { sessionId, role, testMode, name } = query;
+  const { sessionId, role, testMode, name, demo } = query;
   const [tabId] = useState(newTabId);
   const [joinedAt, setJoinedAt] = useState(() => Date.now());
   const [micMuted, setMicMuted] = useState(false);
@@ -46,6 +47,8 @@ export function LiveRoom({
   const [audioEl, setAudioEl] = useState<HTMLAudioElement | null>(null);
   const [needsSoundTap, setNeedsSoundTap] = useState(false);
   const [iceServers, setIceServers] = useState<RTCIceServer[] | null>(null);
+  const [peerWindowOpen, setPeerWindowOpen] = useState(false);
+  const demoMode = isDemoMode(demo, peerWindowOpen);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const attachAudio = useCallback((el: HTMLAudioElement | null) => {
     audioRef.current = el;
@@ -78,6 +81,30 @@ export function LiveRoom({
   useEffect(() => {
     if (superseded) onSuperseded();
   }, [superseded, onSuperseded]);
+
+  // spec §16: 같은 브라우저에 상대 역할 창이 열려 있으면 시연 모드
+  useEffect(() => {
+    const link = openLocalLink(sessionId);
+    if (!link) return;
+    const stop = trackPeerWindow({
+      link,
+      role,
+      tabId,
+      heartbeatMs: config.demo.heartbeatMs,
+      timeoutMs: config.demo.peerTimeoutMs,
+      onChange: setPeerWindowOpen,
+    });
+    return () => {
+      stop();
+      link.close();
+    };
+  }, [sessionId, role, tabId]);
+
+  // 시연 모드는 같은 스피커·마이크라 상대 원음을 틀면 되울린다 — 영상·자막·번역 음성만 둔다
+  useEffect(() => {
+    const el = audioRef.current;
+    if (el) el.muted = demoMode;
+  }, [audioEl, demoMode]);
 
   // spec §7.6: 중계 서버 목록. 실패하면 공개 STUN 만으로 연결한다
   useEffect(() => {
@@ -157,12 +184,13 @@ export function LiveRoom({
       peerPresent,
       micMuted,
       testMode,
+      demoMode,
       send: sendEvent,
       on,
       setPatientLayout,
       registerEndGuard,
     }),
-    [sessionId, role, uiLang, localStream, audioEl, peerPresent, micMuted, testMode, sendEvent, on, setPatientLayout, registerEndGuard],
+    [sessionId, role, uiLang, localStream, audioEl, peerPresent, micMuted, testMode, demoMode, sendEvent, on, setPatientLayout, registerEndGuard],
   );
 
   const retryMedia = () => {
@@ -181,14 +209,19 @@ export function LiveRoom({
   const canRetry = media.status === "error" && media.error !== "notFound";
 
   const status = (
-    <span
-      className={`flex items-center gap-2 truncate rounded-full px-3 py-1 text-sm ${
-        peerPresent ? "bg-emerald-900/60 text-emerald-200" : "bg-neutral-800 text-neutral-300"
-      }`}
-    >
-      <span className={`h-2 w-2 shrink-0 rounded-full ${peerPresent ? "bg-emerald-400" : "bg-neutral-500"}`} />
-      {peerPresent ? t.peerConnected : t.peerWaiting}
-    </span>
+    <>
+      <span
+        className={`flex items-center gap-2 truncate rounded-full px-3 py-1 text-sm ${
+          peerPresent ? "bg-emerald-900/60 text-emerald-200" : "bg-neutral-800 text-neutral-300"
+        }`}
+      >
+        <span className={`h-2 w-2 shrink-0 rounded-full ${peerPresent ? "bg-emerald-400" : "bg-neutral-500"}`} />
+        {peerPresent ? t.peerConnected : t.peerWaiting}
+      </span>
+      {demoMode && (
+        <span className="shrink-0 rounded-full bg-amber-500/90 px-3 py-1 text-xs font-semibold text-neutral-950">{t.demoBadge}</span>
+      )}
+    </>
   );
 
   return (
@@ -273,7 +306,7 @@ export function LiveRoom({
           {micMuted ? t.micOn : t.micOff}
         </button>
         <InterpSlot ctx={ctx} area="controls" />
-        {needsSoundTap && remoteStream && (
+        {needsSoundTap && remoteStream && !demoMode && (
           <button
             type="button"
             onClick={() => audioRef.current?.play().then(() => setNeedsSoundTap(false), () => {})}

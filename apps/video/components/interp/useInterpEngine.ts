@@ -1,13 +1,16 @@
 "use client";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { bcp47Of, speechLangOf, type CaptionPayload, type RoomContext } from "@/lib/contracts";
 import { config } from "@/lib/config";
-import { addCaption, upsertSelfCaption } from "@/lib/interp/captions";
-import { translatePairOf, voiceLangOf } from "@/lib/interp/lang";
+import { addCaption } from "@/lib/interp/captions";
+import { voiceLangOf } from "@/lib/interp/lang";
+import { createListenLock, type ListenLock } from "@/lib/interp/listenLock";
 import { collectResults, getRecognitionCtor } from "@/lib/interp/recognition";
 import { createBrowserSpeaker } from "@/lib/interp/speaker";
 import { getInterpStore, type InterpStore } from "@/lib/interp/store";
+import { submitUtterance } from "@/lib/interp/submit";
 import { translateSentence } from "@/lib/interp/translateClient";
+import { openLocalLink } from "@/lib/room/demo";
 import { TtsQueue } from "@/lib/interp/ttsQueue";
 
 const RESTART_DELAY_MS = 300; // onend 직후 바로 start하면 실패하는 경우가 있어 잠깐 쉰다
@@ -38,14 +41,30 @@ function isCaption(p: unknown): p is CaptionPayload {
 
 // 부수효과(인식·구독·읽기)는 controls 인스턴스 하나만 맡는다 — 인식이 두 번 돌지 않게
 export function useInterpEngine(ctx: RoomContext, store: InterpStore, active: boolean) {
-  const { role, micMuted, remoteAudio, on } = ctx;
+  const { role, micMuted, remoteAudio, on, demoMode, sessionId } = ctx;
   const sendRef = useRef(ctx.send);
   useEffect(() => {
     sendRef.current = ctx.send;
   }, [ctx.send]);
   const queueRef = useRef<TtsQueue | null>(null);
+  const lockRef = useRef<ListenLock | null>(null);
+  const [windowId] = useState(() => crypto.randomUUID());
   const state = useSyncExternalStore(store.subscribe, store.get, store.get);
-  const { enabled, voiceOn, support, speaking } = state;
+  const { enabled, voiceOn, support, speaking, talkRequested } = state;
+
+  // 확정 문장 → 번역 → 방송. 예시 문장 버튼도 이 길로 보낸다.
+  const say = useCallback(
+    (srcText: string) =>
+      submitUtterance({
+        srcText,
+        role,
+        store,
+        send: (ev) => sendRef.current(ev),
+        translate: translateSentence,
+        maxLines: config.interp.captionLines,
+      }),
+    [role, store],
+  );
 
   // 브라우저 지원 확인
   useEffect(() => {
@@ -100,12 +119,11 @@ export function useInterpEngine(ctx: RoomContext, store: InterpStore, active: bo
     });
   }, [active, on, role, store]);
 
-  // 음성 인식 — 통역 켬 + 마이크 켬 + 지원 브라우저일 때만
+  // 음성 인식 — 통역 켬 + 마이크 켬 + 지원 브라우저일 때만. 시연 모드는 아래 [말하기]가 맡는다.
   useEffect(() => {
-    if (!active || !enabled || micMuted || support !== "supported") return;
+    if (!active || demoMode || !enabled || micMuted || support !== "supported") return;
     const Ctor = getRecognitionCtor();
     if (!Ctor) return;
-    const { from, to } = translatePairOf(role);
     const rec = new Ctor();
     rec.lang = bcp47Of(speechLangOf(role));
     rec.continuous = true;
@@ -116,24 +134,7 @@ export function useInterpEngine(ctx: RoomContext, store: InterpStore, active: bo
 
     const handleFinal = (srcText: string) => {
       if (queueRef.current?.shouldDiscardRecognition()) return;
-      const id = crypto.randomUUID();
-      const max = config.interp.captionLines;
-      store.set((s) => ({
-        self: upsertSelfCaption(s.self, { id, srcText, pending: true }, max),
-        pendingCount: s.pendingCount + 1,
-      }));
-      void translateSentence(srcText, from, to).then(({ text, failed }) => {
-        store.set((s) => ({
-          self: upsertSelfCaption(s.self, { id, srcText, dstText: text, pending: false, failed }, max, { insert: false }),
-          pendingCount: Math.max(0, s.pendingCount - 1),
-        }));
-        // 응답을 기다리는 사이 [통역]을 껐으면 방송하지 않는다
-        if (!store.get().enabled) return;
-        sendRef.current({
-          type: "interp:caption",
-          payload: { id, speaker: role, srcLang: from, srcText, dstLang: to, dstText: text, failed },
-        });
-      });
+      void say(srcText);
     };
 
     const start = () => {
@@ -170,5 +171,73 @@ export function useInterpEngine(ctx: RoomContext, store: InterpStore, active: bo
       }
       store.set({ listening: false, interim: "" });
     };
-  }, [active, enabled, micMuted, support, role, store]);
+  }, [active, demoMode, enabled, micMuted, support, role, store, say]);
+
+  // 시연 모드: 같은 브라우저의 창 사이 듣기 잠금 (spec §16)
+  useEffect(() => {
+    if (!active) return;
+    if (!demoMode) {
+      store.set({ talkRequested: false, talkLocked: false });
+      return;
+    }
+    const link = openLocalLink(sessionId);
+    if (!link) return;
+    const lock = createListenLock({
+      link,
+      tabId: windowId,
+      maxMs: config.demo.listenLockMaxMs,
+      onChange: (locked) => store.set({ talkLocked: locked }),
+      onPreempted: () => store.set({ talkRequested: false }),
+    });
+    lockRef.current = lock;
+    return () => {
+      lockRef.current = null;
+      lock.dispose();
+      link.close();
+      store.set({ talkRequested: false, talkLocked: false });
+    };
+  }, [active, demoMode, sessionId, windowId, store]);
+
+  // 시연 모드 [말하기]: 한 문장만 듣고 멈춘다
+  useEffect(() => {
+    if (!active || !demoMode || !talkRequested) return;
+    const Ctor = getRecognitionCtor();
+    const lock = lockRef.current;
+    if (!enabled || micMuted || !Ctor || (lock && !lock.acquire())) {
+      store.set({ talkRequested: false });
+      return;
+    }
+    const rec = new Ctor();
+    rec.lang = bcp47Of(speechLangOf(role));
+    rec.continuous = false;
+    rec.interimResults = true;
+    let done = false;
+    rec.onstart = () => store.set({ listening: true });
+    rec.onresult = (ev) => {
+      const { finals, interim } = collectResults(ev);
+      store.set({ interim });
+      if (finals.length === 0 || done) return;
+      done = true;
+      finals.forEach((f) => void say(f));
+      store.set({ talkRequested: false });
+    };
+    rec.onend = () => store.set({ talkRequested: false });
+    try {
+      rec.start();
+    } catch {
+      store.set({ talkRequested: false });
+    }
+    return () => {
+      rec.onstart = rec.onresult = rec.onerror = rec.onend = null;
+      try {
+        rec.abort();
+      } catch {
+        // 무시
+      }
+      lock?.release();
+      store.set({ listening: false, interim: "" });
+    };
+  }, [active, demoMode, talkRequested, enabled, micMuted, role, store, say]);
+
+  return { say };
 }

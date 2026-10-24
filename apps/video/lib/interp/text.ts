@@ -15,6 +15,10 @@ const doctorText: InterpText = {
   aiBadge: "AI 번역",
   translateFailed: "번역하지 못했습니다",
   selfLabel: "내 발화",
+  talk: "말하기",
+  talkStop: "멈추기",
+  talkLocked: "다른 창이 듣는 중입니다",
+  phrasesLabel: "예시 문장",
 };
 
 export const interpText = (role: Role, uiLang: UiLang): InterpText =>

@@ -14,6 +14,7 @@ describe("parseRoomQuery", () => {
       lang: "ja",
       returnUrl: "https://a.example/ko/clinic/consult/1?ended=1",
       testMode: false,
+      demo: false,
     });
   });
   it("공백은 + 로 읽는다", () => {
@@ -21,6 +22,11 @@ describe("parseRoomQuery", () => {
     expect(q.ok && q.name).toBe("Hanako Yamada");
     expect(q.ok && q.lang).toBe("ko");
     expect(q.ok && q.testMode).toBe(true);
+  });
+  it("demo=1 일 때만 시연 모드 지정", () => {
+    expect(parseRoomQuery(SID, "role=patient&demo=1")).toMatchObject({ ok: true, demo: true });
+    expect(parseRoomQuery(SID, "role=patient&demo=true")).toMatchObject({ ok: true, demo: false });
+    expect(parseRoomQuery(SID, "role=doctor")).toMatchObject({ ok: true, demo: false });
   });
   it("lang 이 없거나 잘못되면 ja", () => {
     expect(parseRoomQuery(SID, "role=patient").ok && parseRoomQuery(SID, "role=patient")).toMatchObject({ lang: "ja" });

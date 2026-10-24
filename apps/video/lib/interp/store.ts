@@ -10,6 +10,8 @@ export type InterpState = {
   self: SelfCaption[];
   remote: CaptionList;
   speaking: boolean;
+  talkRequested: boolean; // 시연 모드 [말하기] — 한 문장만 듣는다
+  talkLocked: boolean; // 시연 모드에서 다른 창이 듣는 중
 };
 
 export type InterpStore = {
@@ -29,6 +31,8 @@ export function createInterpStore(): InterpStore {
     self: [],
     remote: emptyCaptionList(),
     speaking: false,
+    talkRequested: false,
+    talkLocked: false,
   };
   const subs = new Set<() => void>();
   return {

@@ -9,6 +9,7 @@ export type RoomQuery = {
   lang: UiLang;
   returnUrl: string | null;
   testMode: boolean;
+  demo: boolean; // ?demo=1 — 상대 창 감지 없이도 시연 모드
 };
 export type RoomQueryResult = RoomQuery | { ok: false };
 
@@ -40,6 +41,7 @@ export function parseRoomQuery(sessionId: string, search: URLSearchParams | stri
     lang: lang === "ko" ? "ko" : "ja",
     returnUrl: safeReturnUrl(q.get("returnUrl")),
     testMode: q.get("test") === "1",
+    demo: q.get("demo") === "1",
   };
 }
 

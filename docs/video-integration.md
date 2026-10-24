@@ -19,15 +19,20 @@
 | `role` | ✅ | 의사·환자·통역(3자 통화) |
 | `name` | | 화면 표시 이름 |
 | `lang` | | UI 언어 |
-| `returnUrl` | | 통화 종료 후 이동할 플랫폼 URL (예: 환자 `/quote/{id}`, 의사 `/clinic/consult/{id}`) |
+| `returnUrl` | | 통화 종료 후 이동할 플랫폼 URL (예: 환자 `/jp/quote/{id}`, 의사 `/jp/clinic/consult/{id}?ended=1`) |
 
-- 결정 필요: 인증 — 해커톤에서는 sessionId를 추측 불가 값(UUID)으로 쓰는 것으로 대신할지, 서명 토큰을 붙일지.
-- 결정 필요: 새 탭 / iframe 임베드 / 컴포넌트 import 중 무엇으로 열지.
+- 인증: 서명 토큰 없이 `sessionId` = 추측 불가 UUID(`consultations.video_session_id`)로 대신한다(해커톤).
+- 여는 방식: 의사는 의원 콘솔(`/{lang}/clinic/consult/{consultationId}`)에서 **새 탭**, 환자는 `/{lang}/consult/{consultationId}`에서 같은 탭으로 이동, 통역은 의원 콘솔이 복사해 주는 링크.
+- 쿼리는 `URLSearchParams`로 인코딩한다(공백 = `+`). video 쪽도 `URLSearchParams`로 읽어야 한다.
+- 구현: `apps/web/lib/video.ts` `buildRoomUrl()` — 형식이 바뀌면 이 함수만 고친다.
+- returnUrl(절대 URL, 언어 구간 포함 — `docs/i18n.md`): 의사 `/{lang}/clinic/consult/{consultationId}?ended=1`, 환자 `/{lang}/quote/{consultationId}`, 통역 없음. `{lang}` = 입장한 화면의 경로 언어(`jp`|`ko`). video는 returnUrl을 그대로 쓰면 된다.
+- `lang` 쿼리(video UI 언어)는 `ja|ko` 그대로다 — 경로 값 `jp`와 다르다. 환자는 경로 `jp`→`ja`, `ko`→`ko`, 의사·통역은 `ko`.
 
 ## 2. 종료 알림 (video → 플랫폼, 선택)
 통화 종료를 플랫폼이 알아야 상태를 `done`으로 바꾼다. 둘 중 하나:
-- (A) `returnUrl`로 이동하는 것 자체를 종료 신호로 본다 — 가장 단순, 추천.
-- (B) `POST {PLATFORM}/api/video/events` `{ sessionId, event: "ended", durationSec }`.
+- **채택: (A)** 의사가 `returnUrl`(`?ended=1`)로 돌아오면 `in_call → done`. 창을 닫아 돌아오지 않은 경우를 위해 콘솔에 수동 "진료 종료" 버튼이 있다.
+- ~~(B) `POST {PLATFORM}/api/video/events`~~ — 구현하지 않음.
+- 통화 시작: 의사가 "화상 진료 시작"을 누르면 `requested|scheduled → in_call`. 환자 대기 화면(`/consult/{id}`)은 5초 폴링으로 입장 버튼을 켠다.
 
 ## 3. 통화 중 화면 (선택)
 의사가 통화하면서 환자 사진·문진을 봐야 한다. 방법:
@@ -36,3 +41,5 @@
 
 ## 변경 이력
 - 2026-10-24 초안
+- 2026-10-24 H3: 인증(UUID)·여는 방식(새 탭)·종료 신호(A)·returnUrl 확정, `lib/video.ts` 구현
+- 2026-10-24 H3: 화면 경로가 `/[lang]/...`로 바뀌어 returnUrl에 언어 구간 추가 (`docs/i18n.md`)

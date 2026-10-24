@@ -1,12 +1,14 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { getDict, isLang, type Lang } from "@/lib/i18n";
+import { getDict, href, isLang, type Lang } from "@/lib/i18n";
 import { AuthForms } from "./_components/auth-forms";
 import { safeNext } from "./_lib/session";
 
 async function LoginBody({ lang, searchParams }: { lang: Lang; searchParams: Promise<{ next?: string }> }) {
   const [{ next }, dict] = await Promise.all([searchParams, getDict(lang)]);
-  return <AuthForms lang={lang} next={safeNext(next, lang)} t={dict.h2.login} />;
+  const privacy = href(lang, "/legal/privacy");
+  const legalPaths = { terms: href(lang, "/legal/terms"), sensitive: privacy, transfer: privacy };
+  return <AuthForms lang={lang} next={safeNext(next, lang)} t={dict.h2.login} legalPaths={legalPaths} />;
 }
 
 export default async function LoginPage({ params, searchParams }: PageProps<"/[lang]/login">) {

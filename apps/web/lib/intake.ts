@@ -22,16 +22,17 @@ export function normalizeAnswers(answers: Partial<ContraindicationAnswers>): Con
   return Object.fromEntries(CONTRAINDICATION_KEYS.map((k) => [k, answers[k] === true])) as ContraindicationAnswers;
 }
 
-// 고민 → 기대 이미지 생성 프롬프트(영문, 모델 입력용). 시술 표시명은 사전의 procedures — 참고 예시일 뿐 실제 시술은 의사가 정한다
-export const PREVIEW_EFFECTS: Record<ConcernKey, string> = {
-  melasma: "pigmentation and melasma patches look noticeably lighter and more even",
-  freckles: "freckles look lighter and the skin tone is more even",
-  acne: "active acne and inflammation are calmer and reduced",
-  acne_scar: "acne scars look shallower and the skin texture is smoother",
-  pores: "pores look tighter and the skin texture is smoother",
-  redness: "facial redness and visible capillaries are reduced",
-  wrinkles: "fine lines are softened and the skin looks more hydrated and supple",
-  sagging: "the skin looks firmer, more elastic and better hydrated",
+// 고민 → 목표 이미지 생성 프롬프트(영문, 모델 입력용). '시술 후 예측'이 아니라 환자가 원하는 피부(목표)를 의사에게 전달하는 용도 —
+// 효과를 예측·보장하는 표현을 쓰지 않는다 (docs/design.md 적용 규칙)
+export const PREVIEW_GOALS: Record<ConcernKey, string> = {
+  melasma: "a more even skin tone with softer-looking dark patches",
+  freckles: "a more even skin tone with softer-looking freckles",
+  acne: "calmer, clearer-looking skin with less visible blemishes",
+  acne_scar: "smoother-looking skin texture with softer-looking scars",
+  pores: "smoother-looking skin with less noticeable pores",
+  redness: "a calmer, more even skin tone with less visible redness",
+  wrinkles: "softer-looking fine lines and a well-hydrated look",
+  sagging: "a firmer, well-hydrated and healthy-looking skin",
 };
 
 // 체류 일정 검증: 둘 다 있거나 둘 다 없고, 종료 ≥ 시작 (DB check 제약과 동일)

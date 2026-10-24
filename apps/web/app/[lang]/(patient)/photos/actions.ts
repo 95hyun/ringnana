@@ -1,9 +1,10 @@
 "use server";
 
 import { DEFAULT_LANG, getDict, isLang } from "@/lib/i18n";
-import { isConcernKey, PREVIEW_EFFECTS } from "@/lib/intake";
+import { isConcernKey, PREVIEW_GOALS } from "@/lib/intake";
 import { supabaseServer } from "@/lib/supabase/server";
-import { signedPhotoUrls, uploadPhoto } from "@/lib/supabase/storage";
+import { after } from "next/server";
+import { PHOTO_BUCKET, signedPhotoUrls, uploadPhoto } from "@/lib/supabase/storage";
 import { currentPatientId, sign, verify } from "../login/_lib/session";
 import { bbananaConfigured, createGeneration, getTask, type TaskResult } from "./_lib/bbanana";
 
@@ -76,12 +77,12 @@ export async function uploadSelfie(fd: FormData): Promise<UploadResult> {
   return { ok: true, consultationId: c.id };
 }
 
-function previewPrompt(effect: string) {
+function previewPrompt(goal: string) {
   return [
-    "Edit this photo of the same person to show a realistic, modest expected result after a dermatology treatment:",
-    `${effect}.`,
+    "Edit this photo of the same person to visualize the person's desired skin goal:",
+    `${goal}.`,
     "Keep the identity, face shape, expression, pose, hair, lighting, camera angle and background exactly the same.",
-    "Keep natural skin texture. No makeup, no beauty filter, no reshaping, no exaggeration.",
+    "Subtle and natural. Keep natural skin texture. No makeup, no beauty filter, no reshaping, no exaggeration.",
   ].join(" ");
 }
 
@@ -106,7 +107,7 @@ export async function startPreview(intakeId: string, concern: string): Promise<S
   if (!url || !url.startsWith("https://")) return { ok: false, reason: "input_not_public" };
 
   const res = await createGeneration({
-    prompt: previewPrompt(PREVIEW_EFFECTS[concern]),
+    prompt: previewPrompt(PREVIEW_GOALS[concern]),
     imageUrl: url,
     idempotencyKey: crypto.randomUUID(),
   });
@@ -114,12 +115,47 @@ export async function startPreview(intakeId: string, concern: string): Promise<S
     console.error("bbanana create failed", res.code);
     return { ok: false, reason: res.code };
   }
-  return { ok: true, taskId: res.taskId, ticket: sign(`${intake.patient_id}:${res.taskId}`) };
+  return { ok: true, taskId: res.taskId, ticket: sign(`${intake.patient_id}:${intake.id}:${res.taskId}`) };
 }
 
-export async function pollPreview(taskId: string, ticket: string): Promise<TaskResult> {
+export async function pollPreview(taskId: string, intakeId: string, ticket: string): Promise<TaskResult> {
   const patientId = await currentPatientId();
   if (!patientId) return { status: "failed", code: "unauthenticated" };
-  if (!/^tsk_[\w-]+$/.test(taskId) || verify(`${patientId}:${taskId}.${ticket}`) === null) return { status: "failed", code: "bad_task" };
-  return getTask(taskId);
+  if (!/^tsk_[\w-]+$/.test(taskId) || verify(`${patientId}:${intakeId}:${taskId}.${ticket}`) === null) {
+    return { status: "failed", code: "bad_task" };
+  }
+  const t = await getTask(taskId);
+  // 저장은 응답 뒤에 — 환자 화면은 BBANANA URL로 바로 보여준다
+  if (t.status === "succeeded") after(() => savePreview(patientId, intakeId, taskId, t.url));
+  return t;
+}
+
+const PREVIEW_TYPES: Record<string, string> = { "image/png": "png", "image/webp": "webp", "image/jpeg": "jpg" };
+const PREVIEW_MAX_BYTES = 10 * 1024 * 1024;
+
+// 생성 결과를 우리 버킷에 복사해 photos(angle=preview)로 남긴다 — 의원 콘솔(H3)이 진료 상세에 표시 (ux-review C6).
+// 경로에 taskId를 넣고 upsert 없이 올려서, 같은 task를 다시 저장하려 하면 업로드 단계에서 중복으로 멈춘다(멱등)
+async function savePreview(patientId: string, intakeId: string, taskId: string, url: string) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+    const type = (res.headers.get("content-type") ?? "").split(";")[0].trim();
+    const ext = PREVIEW_TYPES[type];
+    if (!res.ok || !ext) throw new Error(`fetch ${res.status} ${type}`);
+    if (Number(res.headers.get("content-length")) > PREVIEW_MAX_BYTES) throw new Error("too large (content-length)");
+    const blob = await res.blob();
+    if (blob.size > PREVIEW_MAX_BYTES) throw new Error(`too large ${blob.size}`);
+    const db = supabaseServer();
+    const storagePath = `patients/${patientId}/preview-${taskId}.${ext}`;
+    const { error: upErr } = await db.storage.from(PHOTO_BUCKET).upload(storagePath, blob, { contentType: type, upsert: false });
+    if (upErr) {
+      if (/exists|duplicate/i.test(upErr.message)) return;
+      throw upErr;
+    }
+    const { error } = await db
+      .from("photos")
+      .insert({ patient_id: patientId, intake_id: intakeId, angle: "preview", storage_path: storagePath });
+    if (error) throw error;
+  } catch (e) {
+    console.error("preview save failed", e);
+  }
 }

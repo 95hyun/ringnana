@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { PatientStepper } from "@/components/shell/patient-stepper";
 import { getDict, href, isLang, type Lang } from "@/lib/i18n";
 import { requirePatient } from "../login/_lib/session";
 import { IntakeForm } from "./_components/intake-form";
@@ -21,6 +22,7 @@ export default async function IntakePage({ params }: PageProps<"/[lang]/intake">
   const dict = await getDict(lang);
   return (
     <div className="flex flex-1 flex-col gap-4 py-4">
+      <PatientStepper lang={lang} current="intake" />
       <h1 className="text-xl font-bold">{dict.h2.intake.title}</h1>
       <Suspense fallback={<p className="text-sm text-muted-foreground">{dict.common.states.loading}</p>}>
         <IntakeBody lang={lang} />

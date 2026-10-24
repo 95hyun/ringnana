@@ -49,7 +49,7 @@ export function IntakeForm({ lang, photosPath, t, concerns, contraindications }:
 
   if (flagged) {
     return (
-      <Card className="border-amber-300 bg-amber-50" data-testid="intake-flag-notice">
+      <Card className="border-warning-border bg-warning-tint" data-testid="intake-flag-notice">
         <CardHeader>
           <CardTitle>{t.flagTitle}</CardTitle>
           <CardDescription>{t.flagBody}</CardDescription>
@@ -130,7 +130,12 @@ export function IntakeForm({ lang, photosPath, t, concerns, contraindications }:
                   </label>
                 ))}
               </div>
-              {answers[k] && <input type="hidden" name="yes" value={k} />}
+              {answers[k] && (
+                <>
+                  <input type="hidden" name="yes" value={k} />
+                  <p className="text-xs text-warning-foreground" role="status">{t.yesNote}</p>
+                </>
+              )}
             </fieldset>
           ))}
         </CardContent>

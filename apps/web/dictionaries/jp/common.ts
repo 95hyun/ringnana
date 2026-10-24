@@ -14,6 +14,15 @@ const common = {
     save: "保存",
     cancel: "キャンセル",
   },
+  steps: {
+    intake: "問診",
+    photos: "写真",
+    consult: "診察",
+    quote: "見積",
+    aftercare: "ケア",
+  },
+  stepLabel: "ステップ",
+  langSwitcher: "言語を切り替える",
   treatments: {
     pico_toning: "ピコトーニング",
     laser_toning: "レーザートーニング",

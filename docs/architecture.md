@@ -43,7 +43,7 @@ apps/web/
 │   └── api/                # 필요한 경우만 (언어 구간 밖)
 ├── components/
 │   ├── ui/                 # shadcn (H1이 추가)
-│   └── shell/              # RootHtml·PatientShell·ClinicShell (H1)
+│   └── shell/              # RootHtml·PatientShell·ClinicShell·LangSwitcher·PatientStepper (H1)
 ├── dictionaries/{jp,ko}/   # common.ts(H1) · h2.ts~h4.ts(각 레인) · index.ts(H1). ko는 satisfies typeof jp
 ├── lib/
 │   ├── supabase/
@@ -63,6 +63,11 @@ apps/web/
 - DB·Storage는 서버(서버 컴포넌트·Server Action·Route Handler)에서 `supabaseServer()`로만 접근한다. 브라우저 Supabase 클라이언트는 없다 — 클라이언트 컴포넌트는 Server Action을 호출한다.
 - RLS는 전 테이블 켜져 있고 정책이 없다 = anon 키로는 아무것도 못 읽고 못 쓴다. `SUPABASE_SERVICE_ROLE_KEY`는 `server-only`로 클라이언트 번들 유입을 막는다. `NEXT_PUBLIC_`를 붙이지 않는다.
 - 고정 ID = `lib/demo.ts`: `DEMO_PATIENT_ID`(佐藤 美咲), `DEMO_DOCTOR_ID`, `DEMO_CLINIC_ID`, `DEMO_AFTERCARE_BOOKING_ID`.
+
+## 공통 UI (H1)
+- 브랜드 토큰: `app/globals.css` `:root` — 주색 `--primary`(청록), 보조 `--accent`(샌드), 배경 톤, `--radius` 0.875rem. 화면에서 색을 하드코딩하지 않고 `bg-primary`·`bg-secondary`·`bg-accent`·`text-muted-foreground` 등 토큰 클래스를 쓴다.
+- 언어 스위처: 두 셸 헤더에 내장(현재 경로 유지, 쿼리는 유지 안 함).
+- 환자 스테퍼: `<PatientStepper lang={lang} current="intake|photos|consult|quote|aftercare" />`를 각 화면 상단에 넣는다(서버 컴포넌트).
 
 ## DB 데이터 현지화 (`lib/localize.ts`)
 - `localized(row, lang, field = "name")`: 다국어 컬럼 규칙 = 기본 컬럼(`name`) 한국어, `name_ja` 일본어. 화면에서 `name_ja ?? name`을 직접 쓰지 않는다.

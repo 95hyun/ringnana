@@ -15,6 +15,15 @@ const common = {
     save: "저장",
     cancel: "취소",
   },
+  steps: {
+    intake: "문진",
+    photos: "사진",
+    consult: "진료",
+    quote: "견적",
+    aftercare: "사후관리",
+  },
+  stepLabel: "단계",
+  langSwitcher: "언어 전환",
   treatments: {
     pico_toning: "피코토닝",
     laser_toning: "레이저토닝",

@@ -106,12 +106,13 @@ apps/web/
 
 | 테이블 | 주요 컬럼 | 비고 |
 |---|---|---|
-| `clinics` | id, name, name_ja, address | 제휴 유치의료기관 |
-| `doctors` | id, clinic_id, user_id?, name, name_ja, specialty | 피부과 전문의 |
+| `clinics` | id, name, name_ja, address, address_ja, area, station, station_ja | 제휴 유치의료기관. area = 지역 코드(gangnam·myeongdong·apgujeong), 탐색 필터용 |
+| `doctors` | id, clinic_id, user_id?, name, name_ja, specialty, specialties text[], languages text[], title, title_ja, bio, bio_ja, photo_path? | specialties = 문진 고민 코드, languages = ja·ko·en (탐색 필터) |
+| `doctor_slots` | id, doctor_id, starts_at, ends_at, status | 상담 가능 시간(30분). status `open`/`booked` — 신청 시 booked, 거절·취소 시 open. (doctor_id, starts_at) unique |
 | `patients` | id, user_id?, name, name_latin?, consented_at?, country, lang, birth_year | 데모는 country=JP. name_latin = 로마자(의원 콘솔 표기), consented_at = 가입 필수 동의 3종 시각 |
 | `intakes` | id, patient_id, concerns text[], contraindications jsonb, flags text[], trip_start, trip_end | 금기 플래그는 `lib/intake.ts`가 계산 |
 | `photos` | id, patient_id, intake_id?, angle, storage_path, quality_ok, consultation_id?, source, capture_batch_id?, capture_mode?, yaw?, pitch? | angle: `front`·`left`·`right`·`followup`(체크인 사진)·`preview`(AI 시술 기대 이미지, H2). source: `intake`(기본, 사전·셀카) / `call`(통화 중 촬영, video 앱 서버가 저장 — consultation_id·capture_batch_id 필수). capture_mode: `auto`/`manual`. (capture_batch_id, angle) unique → 재전송은 upsert로 덮어씀 ([video-integration.md](video-integration.md) §4) |
-| `consultations` | id, patient_id, doctor_id, intake_id, status, scheduled_at, video_session_id, notes | status: `requested → scheduled → in_call → done`. `video_session_id` = 기본값 랜덤 UUID(화상 방 키) |
+| `consultations` | id, patient_id, doctor_id, intake_id, slot_id, status, scheduled_at, requested_at, decided_at, decline_reason, video_session_id, notes | status: `draft → requested → scheduled(의원 수락) → in_call → done`, 분기 `declined`·`cancelled` ([product/user-flow.md](product/user-flow.md)). `video_session_id` = 기본값 랜덤 UUID(화상 방 키) |
 | `quotes` | id, consultation_id, items jsonb, total_krw, valid_until, status | items: `[{ code?, name, name_ja, sessions, price_krw, visit_days? }]` — code = 시술 코드(`lib/localize.ts` TREATMENT_CODES, 자유 입력 항목은 없음) — price_krw = 1회 단가, visit_days = 체류 N일차(1부터) 배열(H3). status: `draft → confirmed → accepted`. confirmed 이후 변경 불가(앱에서 지킴) |
 | `bookings` | id, quote_id, clinic_id, visit_dates date[], status | status: `reserved → done` |
 | `followups` | id, booking_id, due_day(3/14/30), status, photo_id, patient_note, doctor_note, alert, symptoms text[] | status: `pending → submitted → reviewed`. symptoms = 증상 자가 체크 고정 키(H4), 하나라도 있으면 alert=true. (booking_id, due_day) unique |
@@ -123,7 +124,7 @@ apps/web/
 - 견적 통화: DB는 KRW. 화면 표기 통화는 H4 결정.
 
 ## 시드 (가상 인물)
-- 의원 1(링나나 피부과의원), 의사 1(김서연), 데모 페르소나 佐藤 美咲(1997년생, 새 문진 전 상태, Auth 계정 `misaki@ringnana.demo` / `ringnana`).
+- 의원 3(강남 링나나·명동 서울빛·압구정 하루), 의사 6(김서연 = `DEMO_DOCTOR_ID` 포함, 분야·언어 다양), 상담 슬롯 = 시드 실행 다음 날부터 21일(의사별 요일·시간대 다름, KST), 데모 페르소나 佐藤 美咲(1997년생, 새 문진 전 상태, Auth 계정 `misaki@ringnana.demo` / `ringnana`).
 - 시드는 로컬 Auth 사용자도 전부 지운다(가입 테스트 계정 포함).
 - 진료 큐: 가상 환자 3명 — 문진·사진 3장·진료(`scheduled` 1, `requested` 2, 한 명은 `anticoagulant` 플래그). `scheduled` 진료(田中 優子)의 `video_session_id` = `DEMO_VIDEO_SESSION_ID`(`00000000-0000-4000-8000-000000005001`, 화상 앱 단독 테스트용).
 - 데모 7번 장면: 페르소나의 지난 방한 흐름 — 진료 `done` → 견적 `accepted`(피코토닝 2회, 300,000원) → 예약 `done`(시술일 = 시드 실행일 −16·−14일) → followup D+3 `reviewed`(사진 포함)·D+14 `pending`·D+30 `pending`. 날짜는 시드 실행일 기준이라 **데모 당일 다시 시드하면 오늘이 D+14**다.

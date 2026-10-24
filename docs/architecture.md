@@ -44,7 +44,8 @@ apps/web/
 │   └── api/                # 필요한 경우만 (언어 구간 밖)
 ├── components/
 │   ├── ui/                 # shadcn (H1이 추가)
-│   └── shell/              # RootHtml·PatientShell·ClinicShell·LangSwitcher·PatientStepper·SiteFooter (H1)
+│   ├── ui/ 추가분           # disclaimer-bar·loading-card·sample-image (H1, design.md §5·§7)
+│   └── shell/              # RootHtml·PatientShell·ClinicShell·LangSwitcher·PatientStepper·SiteFooter·PatientWideLayout (H1)
 ├── dictionaries/{jp,ko}/   # common.ts·legal.ts·index.ts(H1) · h2.ts~h4.ts(각 레인). ko는 satisfies typeof jp
 ├── lib/
 │   ├── supabase/
@@ -68,9 +69,13 @@ apps/web/
 - RLS는 전 테이블 켜져 있고 정책이 없다 = anon 키로는 아무것도 못 읽고 못 쓴다. `SUPABASE_SERVICE_ROLE_KEY`는 `server-only`로 클라이언트 번들 유입을 막는다. `NEXT_PUBLIC_`를 붙이지 않는다.
 - 고정 ID = `lib/demo.ts`: `DEMO_PATIENT_ID`(佐藤 美咲), `DEMO_DOCTOR_ID`, `DEMO_CLINIC_ID`, `DEMO_AFTERCARE_BOOKING_ID`.
 
-## 공통 UI (H1)
-- 브랜드 토큰: `app/globals.css` `:root` — 주색 `--primary`(청록), 보조 `--accent`(샌드), 배경 톤, `--radius` 0.875rem. 화면에서 색을 하드코딩하지 않고 `bg-primary`·`bg-secondary`·`bg-accent`·`text-muted-foreground` 등 토큰 클래스를 쓴다.
-- 언어 스위처: 두 셸 헤더에 내장(현재 경로 유지, 쿼리는 유지 안 함).
+## 공통 UI (H1) — 정본 [design.md](design.md)
+- 토큰: `app/globals.css` `:root` = design.md §2-3 그대로(라이트만). 커스텀 Tailwind 색: `primary-hover`·`primary-tint`·`blush`·`blush-tint`·`warning`·`warning-foreground`·`warning-tint`·`warning-border`·`danger`(체크인 응급 카드 전용)·`surface`·`border-strong`·`ai-border`·`disclaimer-bg`. **shadcn `secondary` = blush(환자 색)** — 중립 상태에는 `outline`·`ghost`·`muted`를 쓴다. 금기·보류 = warning 계열, 빨강 금지.
+- 폰트: Inter + Noto Sans JP(400·500·600), ko 화면은 `font-ko`(Inter + Noto Sans KR). 본문 15px, jp(html lang=ja) 행간 1.7. lucide 선 굵기 1.75(전역 CSS).
+- 형태: 카드 `rounded-xl`(12px)·border·shadow-sm, 버튼·입력 `rounded-lg`(10px)·높이 44px, 배지 999px.
+- `components/ui/`: Button `default`(Primary)·`outline`·`ghost` · Badge `role-patient`·`role-doctor`·`ai-label`·`doctor-confirmed`·`flag-high`·`flag-medium`·`hold` · `DisclaimerBar`(children = `common.disclaimer`) · `LoadingCard`(steps·caption prop, 페이드 200ms) · `SampleImage`(4:5 cover + 좌하단 라벨, `common.sampleImage`/`common.aiLabel`).
+- 셸: 헤더 64px, 워드마크 Ringnana(Inter 18/600), 우측 언어 스위처 + 역할 배지(환자 blush / 의사 primary) + 데모용 환자↔의원 화면 전환. 모바일은 JA/KO 축약.
+- 환자 2단: `<PatientWideLayout left right />`(`components/shell/patient-wide.tsx`, 좌7/우5, 최대 1200px). 이게 있는 페이지만 PatientShell이 넓어진다(랜딩·필요 화면). 390px에서는 1단.
 - 푸터: PatientShell 하단 `SiteFooter`(운영사·등록번호·제휴 의원·문의·약관 링크, 전부 가상). 약관 링크 = `href(lang, "/legal/terms|privacy|tokushoho")`.
 - 환자 스테퍼: `<PatientStepper lang={lang} current="intake|photos|consult|quote|aftercare" />`를 각 화면 상단에 넣는다(서버 컴포넌트).
 

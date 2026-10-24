@@ -22,7 +22,7 @@ export async function PatientStepper({ lang, current }: { lang: Lang; current: P
                 className={cn(
                   "flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
                   done && "border-primary bg-primary text-primary-foreground",
-                  active && "border-primary bg-secondary text-secondary-foreground ring-4 ring-secondary",
+                  active && "border-primary bg-primary-tint text-primary-hover ring-4 ring-primary-tint",
                   !done && !active && "border-border bg-background text-muted-foreground",
                 )}
               >

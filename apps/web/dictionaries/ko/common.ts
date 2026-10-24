@@ -15,6 +15,19 @@ const common = {
     save: "저장",
     cancel: "취소",
   },
+  roles: {
+    patient: "환자",
+    doctor: "의사",
+  },
+  switchView: {
+    toClinic: "의원 화면으로",
+    toPatient: "환자 화면으로",
+  },
+  disclaimer: "비대면 진료는 내원 전 사전 상담입니다. 시술의 최종 판단은 내원 시 의사가 합니다.",
+  sampleImage: "샘플 이미지",
+  aiLabel: "AI 이미지",
+  doctorConfirmed: "의사 확정",
+  loadingCaption: "보통 30초 정도 걸립니다.",
   steps: {
     intake: "문진",
     photos: "사진",

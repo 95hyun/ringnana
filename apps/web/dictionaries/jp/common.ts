@@ -14,6 +14,19 @@ const common = {
     save: "保存",
     cancel: "キャンセル",
   },
+  roles: {
+    patient: "患者",
+    doctor: "医師",
+  },
+  switchView: {
+    toClinic: "医院画面へ",
+    toPatient: "患者画面へ",
+  },
+  disclaimer: "オンライン診察は来院前の事前相談です。施術の最終判断は来院時に医師が行います。",
+  sampleImage: "サンプル画像",
+  aiLabel: "AIによるイメージ",
+  doctorConfirmed: "医師確定",
+  loadingCaption: "通常30秒ほどかかります。",
   steps: {
     intake: "問診",
     photos: "写真",

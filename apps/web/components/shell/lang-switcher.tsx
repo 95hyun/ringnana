@@ -38,7 +38,7 @@ function LangLinks({ lang, label, rest }: { lang: Lang; label: string; rest: str
           data-lang-switch={l}
           className={cn(
             "rounded-full px-2 py-1 transition-colors sm:px-2.5",
-            l === lang ? "bg-secondary font-semibold text-secondary-foreground" : "text-muted-foreground hover:text-foreground",
+            l === lang ? "bg-accent font-semibold text-accent-foreground" : "text-muted-foreground hover:text-foreground",
           )}
         >
           <span className="sm:hidden" aria-hidden>{LANG_SHORT[l]}</span>

@@ -9,6 +9,7 @@
 | [architecture.md](architecture.md) | 스택·폴더·라우트·데이터 모델 | 코드를 쓰기 전에 |
 | [i18n.md](i18n.md) | `/[lang]/...` 경로·사전 규칙 | 화면·링크를 만들 때 |
 | [video-integration.md](video-integration.md) | 플랫폼 ↔ 화상통화 계약 | 화상 진료 연결부를 만들 때 |
+| [face-capture.md](face-capture.md) | 화상 진료 중 얼굴 3방향 가이드 촬영 (video 소유) | 통화 중 촬영·사진 저장을 다룰 때 |
 | [conventions.md](conventions.md) | 코드·git·협업 규칙 | 커밋 전에 |
 | [HEAD.md](HEAD.md) | 병렬 Claude 세션(head)용 브리프·레인 분담 | 새 세션에 작업을 나눠 줄 때 |
 | [requests.md](requests.md) | 레인 간 요청 | 남의 소유 파일이 필요할 때 |

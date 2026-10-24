@@ -18,41 +18,46 @@
 > Next 16은 학습 데이터와 API가 다르다. 코드를 쓰기 전 `apps/web/node_modules/next/dist/docs/`를 확인한다 (`apps/web/AGENTS.md`).
 
 ## 폴더 (apps/web)
-
-> ⚠️ 2026-10-24: 사용자 화면은 전부 `app/[lang]/` 아래로 이동한다 — 경로·사전 규칙은 [i18n.md](i18n.md)가 정본. 아래 트리는 이동 전 기준이며 H1이 이동 후 갱신한다.
+사용자 화면은 전부 `app/[lang]/` 아래다 — 경로·사전 규칙은 [i18n.md](i18n.md)가 정본. 루트 레이아웃이 `[lang]`·`dev` 두 개라 `app/layout.tsx`는 없다(둘 다 `RootHtml` 사용, 두 루트를 오가면 전체 페이지 로드).
 ```
 apps/web/
+├── proxy.ts                # 언어 없는 경로 → /jp/... 리다이렉트 (/api·/dev·정적 파일 제외) (H1)
 ├── app/
-│   ├── layout.tsx          # 루트: 폰트·메타·Toaster (H1)
-│   ├── (patient)/          # 환자 앱 — 일본어
-│   │   ├── layout.tsx            # PatientShell (H1)
-│   │   ├── page.tsx              # 랜딩 (H2)
-│   │   ├── intake/               # 문진(금기 스크리닝) (H2)
-│   │   ├── photos/               # 표준 사진 촬영 가이드·업로드 (H2)
-│   │   ├── consult/[id]/         # 화상 진료 대기·입장 → video 앱으로 (H3)
-│   │   ├── quote/[id]/           # 확정 견적 확인·예약 (H4)
-│   │   └── aftercare/            # 귀국 후 체크인 (H4)
-│   ├── clinic/             # 의원 콘솔 — 한국어
-│   │   ├── layout.tsx            # ClinicShell (H1 초안 → H3)
-│   │   ├── page.tsx              # 진료 큐 (H3)
-│   │   ├── consult/[id]/         # 환자 문진·사진 열람 + 화상 입장 + 소견·견적 작성 (H3)
-│   │   └── aftercare/            # 체크인 검토 (H4)
-│   ├── dev/                # H1 확인용: DB 연결·시드·셸 미리보기 (데모 미사용, production에선 /dev 404)
-│   └── api/                # 필요한 경우만 (video 콜백 등)
+│   ├── [lang]/             # jp(기본, html lang=ja) · ko
+│   │   ├── layout.tsx            # 루트: RootHtml + lang 검증·generateStaticParams (H1)
+│   │   ├── (patient)/            # 환자 앱
+│   │   │   ├── layout.tsx            # PatientShell (H1)
+│   │   │   ├── page.tsx              # 랜딩 (H2)
+│   │   │   ├── login/                # 이메일+비밀번호, 세션 _lib/session.ts (H2)
+│   │   │   ├── intake/               # 문진(금기 스크리닝) (H2)
+│   │   │   ├── photos/               # 셀카 → AI 시술 기대 이미지 (H2)
+│   │   │   ├── consult/[id]/         # 화상 진료 대기·입장 → video 앱으로 (H3)
+│   │   │   ├── quote/[id]/           # 확정 견적 확인·예약 (H4) — id = consultation id (견적 id 아님)
+│   │   │   └── aftercare/            # 귀국 후 체크인 (H4)
+│   │   └── clinic/               # 의원 콘솔 (문구는 jp 경로에서도 한국어 가능)
+│   │       ├── layout.tsx            # ClinicShell (H3)
+│   │       ├── page.tsx              # 진료 큐 (H3)
+│   │       ├── consult/[id]/         # 문진·사진 열람 + 화상 입장 + 소견·견적 작성 (H3)
+│   │       └── aftercare/            # 체크인 검토 (H4)
+│   ├── dev/                # 루트: H1 확인용 DB 연결·시드·셸 미리보기 (언어 구간 밖, production에선 /dev 404)
+│   └── api/                # 필요한 경우만 (언어 구간 밖)
 ├── components/
 │   ├── ui/                 # shadcn (H1이 추가)
-│   └── shell/              # PatientShell·ClinicShell (H1)
+│   └── shell/              # RootHtml·PatientShell·ClinicShell (H1)
+├── dictionaries/{jp,ko}/   # common.ts(H1) · h2.ts~h4.ts(각 레인) · index.ts(H1). ko는 satisfies typeof jp
 ├── lib/
 │   ├── supabase/
 │   │   ├── server.ts             # supabaseServer() — service role, server-only
 │   │   ├── storage.ts            # uploadPhoto·signedPhotoUrl(s)·photoPath
 │   │   └── database.types.ts     # pnpm db:types 생성물 (손대지 않음)
-│   ├── demo.ts             # 데모 고정 ID
+│   ├── i18n.ts             # LANGS·isLang·htmlLang·href·getDict (H1)
+│   ├── demo.ts             # 데모 고정 ID·페르소나 계정 (H1)
 │   ├── utils.ts            # cn (shadcn)
 │   ├── intake.ts           # 금기 플래그 규칙 (H2)
 │   └── video.ts            # video 앱 URL 생성 (H3)
 └── seed/                   # index.ts(가상 데이터) + assets/(플레이스홀더 사진)
 ```
+- 서버 컴포넌트에서 현재 언어: `params.lang` 또는 `import { lang } from "next/root-params"`(Server Action·Route Handler 불가 → hidden 필드 등으로 넘긴다). 둘 다 `isLang()`으로 검증한다.
 
 ## 데이터 접근 규칙
 - DB·Storage는 서버(서버 컴포넌트·Server Action·Route Handler)에서 `supabaseServer()`로만 접근한다. 브라우저 Supabase 클라이언트는 없다 — 클라이언트 컴포넌트는 Server Action을 호출한다.
@@ -65,7 +70,7 @@ apps/web/
 - 현재 환자: `currentPatientId()`·`requirePatient(next)` — 구현 `app/(patient)/login/_lib/session.ts` (H2 소유). 미로그인이면 `/login?next=…`.
 - DB 접근은 로그인 여부와 무관하게 여전히 `supabaseServer()`(service role)만 쓴다. RLS 정책은 없다.
 - 데모 계정: `misaki@ringnana.demo` / `ringnana` = `DEMO_PATIENT_ID`(시드가 생성). 의사 측은 로그인 없이 `DEMO_DOCTOR_ID`.
-- 사진: 업로드는 `uploadPhoto(patientId, file, { ext, contentType })` → `storage_path`를 `photos` 행에 저장. 화면 표시는 `signedPhotoUrl(s)`로 1시간짜리 URL을 받아 `<img>`로 (signed URL은 `next/image` 최적화 대상 아님).
+- 사진: 버킷 `photos`(private). 경로 — 플랫폼 업로드 `patients/{patientId}/{uuid}.{ext}`, 통화 중 촬영(video 앱) `call/{consultationId}/{batchId}/{angle}.jpg`. 업로드는 `uploadPhoto(patientId, file, { ext, contentType })` → `storage_path`를 `photos` 행에 저장. 화면 표시는 `signedPhotoUrl(s)`로 1시간짜리 URL을 받아 `<img>`로 (signed URL은 `next/image` 최적화 대상 아님).
 - **데이터 읽기 (Cache Components)**: DB 읽기는 기본이 요청 시점 실행이다. DB를 읽는 async 컴포넌트는 `<Suspense>`로 감싸고, 읽기 전에 `await connection()`(`next/server`)을 부른다 — 예시 `app/dev/page.tsx`. 막히면 해당 page에 `export const instant = false`. `new Date()`·`crypto.randomUUID()`를 prerender 구간에서 부르면 빌드가 깨진다.
 - 쓰기 후 화면 갱신은 Server Action에서 `revalidatePath`/`refresh` (Next 16 문서 `01-getting-started/07-mutating-data.md`).
 - supabase-js 다건 insert에서 행마다 키가 다르면 빠진 키가 null로 들어간다 — 기본값 있는 not null 컬럼도 명시한다.
@@ -79,11 +84,11 @@ apps/web/
 | `doctors` | id, clinic_id, user_id?, name, name_ja, specialty | 피부과 전문의 |
 | `patients` | id, user_id?, name, country, lang, birth_year | 데모는 country=JP |
 | `intakes` | id, patient_id, concerns text[], contraindications jsonb, flags text[], trip_start, trip_end | 금기 플래그는 `lib/intake.ts`가 계산 |
-| `photos` | id, patient_id, intake_id?, angle, storage_path, quality_ok | angle: `front`·`left`·`right`·`followup`(체크인 사진) |
+| `photos` | id, patient_id, intake_id?, angle, storage_path, quality_ok, consultation_id?, source, capture_batch_id?, capture_mode?, yaw?, pitch? | angle: `front`·`left`·`right`·`followup`(체크인 사진). source: `intake`(기본, 사전·셀카) / `call`(통화 중 촬영, video 앱 서버가 저장 — consultation_id·capture_batch_id 필수). capture_mode: `auto`/`manual`. (capture_batch_id, angle) unique → 재전송은 upsert로 덮어씀 ([video-integration.md](video-integration.md) §4) |
 | `consultations` | id, patient_id, doctor_id, intake_id, status, scheduled_at, video_session_id, notes | status: `requested → scheduled → in_call → done`. `video_session_id` = 기본값 랜덤 UUID(화상 방 키) |
-| `quotes` | id, consultation_id, items jsonb, total_krw, valid_until, status | items: `[{ name, name_ja, sessions, price_krw }]`. status: `draft → confirmed → accepted`. confirmed 이후 변경 불가(앱에서 지킴) |
+| `quotes` | id, consultation_id, items jsonb, total_krw, valid_until, status | items: `[{ name, name_ja, sessions, price_krw, visit_days? }]` — price_krw = 1회 단가, visit_days = 체류 N일차(1부터) 배열(H3). status: `draft → confirmed → accepted`. confirmed 이후 변경 불가(앱에서 지킴) |
 | `bookings` | id, quote_id, clinic_id, visit_dates date[], status | status: `reserved → done` |
-| `followups` | id, booking_id, due_day(3/14/30), status, photo_id, patient_note, doctor_note, alert | status: `pending → submitted → reviewed`. 이상 신호면 alert=true. (booking_id, due_day) unique |
+| `followups` | id, booking_id, due_day(3/14/30), status, photo_id, patient_note, doctor_note, alert, symptoms text[] | status: `pending → submitted → reviewed`. symptoms = 증상 자가 체크 고정 키(H4), 하나라도 있으면 alert=true. (booking_id, due_day) unique |
 
 - 모든 테이블에 `created_at`. 상태값은 enum 타입이 아니라 `text + check` — 값 추가는 새 마이그레이션.
 - 시드가 쓰는 초기 코드값 (H2가 `lib/intake.ts`에서 라벨을 정의, 바꾸려면 `docs/requests.md`로 시드 수정 요청):
@@ -94,7 +99,7 @@ apps/web/
 ## 시드 (가상 인물)
 - 의원 1(링나나 피부과의원), 의사 1(김서연), 데모 페르소나 佐藤 美咲(1997년생, 새 문진 전 상태, Auth 계정 `misaki@ringnana.demo` / `ringnana`).
 - 시드는 로컬 Auth 사용자도 전부 지운다(가입 테스트 계정 포함).
-- 진료 큐: 가상 환자 3명 — 문진·사진 3장·진료(`scheduled` 1, `requested` 2, 한 명은 `anticoagulant` 플래그).
+- 진료 큐: 가상 환자 3명 — 문진·사진 3장·진료(`scheduled` 1, `requested` 2, 한 명은 `anticoagulant` 플래그). `scheduled` 진료(田中 優子)의 `video_session_id` = `DEMO_VIDEO_SESSION_ID`(`00000000-0000-4000-8000-000000005001`, 화상 앱 단독 테스트용).
 - 데모 7번 장면: 페르소나의 지난 방한 흐름 — 진료 `done` → 견적 `accepted`(피코토닝 2회, 300,000원) → 예약 `done`(시술일 = 시드 실행일 −16·−14일) → followup D+3 `reviewed`(사진 포함)·D+14 `pending`·D+30 `pending`. 날짜는 시드 실행일 기준이라 **데모 당일 다시 시드하면 오늘이 D+14**다.
 - 사진은 실제 피부 사진이 아니라 `seed/assets/` 플레이스홀더.
 

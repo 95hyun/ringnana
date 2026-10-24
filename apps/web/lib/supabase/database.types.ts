@@ -117,14 +117,14 @@ isOneToOne: false
                   ]
                 },"followups": {
                   Row: {
-                    "alert": boolean,"booking_id": string,"created_at": string,"doctor_note": string | null,"due_day": number,"id": string,"patient_note": string | null,"photo_id": string | null,"status": string
+                    "alert": boolean,"booking_id": string,"created_at": string,"doctor_note": string | null,"due_day": number,"id": string,"patient_note": string | null,"photo_id": string | null,"status": string,"symptoms": (string)[]
                   }
                   ComputedFields: never
                   Insert: {
-                    "alert"?: boolean,"booking_id": string,"created_at"?: string,"doctor_note"?: string | null,"due_day": number,"id"?: string,"patient_note"?: string | null,"photo_id"?: string | null,"status"?: string
+                    "alert"?: boolean,"booking_id": string,"created_at"?: string,"doctor_note"?: string | null,"due_day": number,"id"?: string,"patient_note"?: string | null,"photo_id"?: string | null,"status"?: string,"symptoms"?: (string)[]
                   }
                   Update: {
-                    "alert"?: boolean,"booking_id"?: string,"created_at"?: string,"doctor_note"?: string | null,"due_day"?: number,"id"?: string,"patient_note"?: string | null,"photo_id"?: string | null,"status"?: string
+                    "alert"?: boolean,"booking_id"?: string,"created_at"?: string,"doctor_note"?: string | null,"due_day"?: number,"id"?: string,"patient_note"?: string | null,"photo_id"?: string | null,"status"?: string,"symptoms"?: (string)[]
                   }
                   Relationships: [
                     {
@@ -177,17 +177,23 @@ isOneToOne: false
                   ]
                 },"photos": {
                   Row: {
-                    "angle": string,"created_at": string,"id": string,"intake_id": string | null,"patient_id": string,"quality_ok": boolean | null,"storage_path": string
+                    "angle": string,"capture_batch_id": string | null,"capture_mode": string | null,"consultation_id": string | null,"created_at": string,"id": string,"intake_id": string | null,"patient_id": string,"pitch": number | null,"quality_ok": boolean | null,"source": string,"storage_path": string,"yaw": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "angle": string,"created_at"?: string,"id"?: string,"intake_id"?: string | null,"patient_id": string,"quality_ok"?: boolean | null,"storage_path": string
+                    "angle": string,"capture_batch_id"?: string | null,"capture_mode"?: string | null,"consultation_id"?: string | null,"created_at"?: string,"id"?: string,"intake_id"?: string | null,"patient_id": string,"pitch"?: number | null,"quality_ok"?: boolean | null,"source"?: string,"storage_path": string,"yaw"?: number | null
                   }
                   Update: {
-                    "angle"?: string,"created_at"?: string,"id"?: string,"intake_id"?: string | null,"patient_id"?: string,"quality_ok"?: boolean | null,"storage_path"?: string
+                    "angle"?: string,"capture_batch_id"?: string | null,"capture_mode"?: string | null,"consultation_id"?: string | null,"created_at"?: string,"id"?: string,"intake_id"?: string | null,"patient_id"?: string,"pitch"?: number | null,"quality_ok"?: boolean | null,"source"?: string,"storage_path"?: string,"yaw"?: number | null
                   }
                   Relationships: [
                     {
+      foreignKeyName: "photos_consultation_id_fkey"
+      columns: ["consultation_id"]
+isOneToOne: false
+      referencedRelation: "consultations"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "photos_intake_id_fkey"
       columns: ["intake_id"]
 isOneToOne: false

@@ -12,6 +12,7 @@ import {
   DEMO_PATIENT_EMAIL,
   DEMO_PATIENT_ID,
   DEMO_PATIENT_PASSWORD,
+  DEMO_VIDEO_SESSION_ID,
 } from "../lib/demo";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -161,6 +162,7 @@ async function main() {
         intake_id: intake.id,
         status: q.status,
         scheduled_at: q.status === "scheduled" ? hoursFromNow(2) : null,
+        ...(q.status === "scheduled" ? { video_session_id: DEMO_VIDEO_SESSION_ID } : {}),
       }),
       `consultation ${q.name}`,
     );

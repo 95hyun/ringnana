@@ -28,6 +28,8 @@
 - returnUrl(절대 URL, 언어 구간 포함 — `docs/i18n.md`): 의사 `/{lang}/clinic/consult/{consultationId}?ended=1`, 환자 `/{lang}/quote/{consultationId}`. `{lang}` = 입장한 화면의 경로 언어(`jp`|`ko`). video는 returnUrl을 그대로 쓰면 된다.
 - `lang` 쿼리(video UI 언어)는 `ja|ko` 그대로다 — 경로 값 `jp`와 다르다. 환자는 경로 `jp`→`ja`, `ko`→`ko`, 의사는 `ko`.
 
+- video 앱은 노트북 2대 시연을 위해 HTTPS로 띄운다. `NEXT_PUBLIC_VIDEO_BASE_URL`은 `https://{video 노트북 IP}:3001` 형태가 된다 ([face-capture.md](face-capture.md) §7).
+
 ## 2. 종료 알림 (video → 플랫폼, 선택)
 통화 종료를 플랫폼이 알아야 상태를 `done`으로 바꾼다. 둘 중 하나:
 - **채택: (A)** 의사가 `returnUrl`(`?ended=1`)로 돌아오면 `in_call → done`. 창을 닫아 돌아오지 않은 경우를 위해 콘솔에 수동 "진료 종료" 버튼이 있다.
@@ -39,8 +41,35 @@
 - 의원 콘솔을 띄운 채 video를 새 창으로 연다(연동 없음) — 해커톤 기본값.
 - video가 사이드 패널 슬롯을 제공하면 플랫폼이 `/clinic/consult/{id}/panel`을 iframe으로 넣는다.
 
+## 4. 통화 중 추가 촬영 사진 (video → 플랫폼 데이터)
+> 기능 설명: [face-capture.md](face-capture.md). ⚠️ H1·H3 확인 필요 — [requests.md](requests.md).
+
+통화 중 의사가 요청하면 환자의 얼굴 정면·좌·우 사진을 찍는다. video 앱 **서버**가 이 사진을 플랫폼과 같은 Supabase에 직접 저장한다(service role, 서버 전용).
+
+- **진료 찾기:** `consultations.video_session_id = sessionId`로 `consultation_id`와 `patient_id`를 얻는다. 해당 진료가 없으면 저장하지 않고 오류로 처리한다.
+- **파일:** 플랫폼의 비공개 사진 버킷 **`photos`**의 `call/{consultationId}/{batchId}/{angle}.jpg`에 둔다. JPEG 원본, 좌우 반전 없음.
+- **행:** `photos`에 사진 1장당 1행을 넣는다. 기존 컬럼과 추가를 요청한 컬럼은 아래와 같다.
+
+| 컬럼 | 값 | 비고 |
+|---|---|---|
+| `patient_id` | 진료의 환자 | 기존 |
+| `angle` | `front` / `left` / `right` (환자 본인 기준) | 기존 |
+| `storage_path` | 위 경로 | 기존 |
+| `quality_ok` | 자동 촬영 `true`, 수동 촬영 `false` | 기존 |
+| `consultation_id` | 진료 ID | **추가 요청** (nullable — `/photos` 사전 사진은 null) |
+| `source` | `intake`(사전, 기본값) / `call`(통화 중) | **추가 요청** |
+| `capture_batch_id` | 촬영 회차 UUID (의사가 요청할 때마다 새로 발급) | **추가 요청** |
+| `capture_mode` | `auto` / `manual` | **추가 요청** |
+| `yaw`, `pitch` | 촬영 시점 고개 각도(도) | **추가 요청** — 이후 경과 비교용 |
+
+- 한 회차(`capture_batch_id`)에는 각 `angle`이 최대 1장이다(DB unique). 같은 각도를 다시 보내면 덮어쓴다 — Storage는 `upsert: true`, 행은 `upsert(…, { onConflict: "capture_batch_id,angle" })`.
+- 스키마: `supabase/migrations/202610241800_call_capture_symptoms.sql` (H1, 2026-10-24). `source = call` 행은 `consultation_id`·`capture_batch_id`가 없으면 DB가 거부한다.
+- 단독 테스트용 고정 진료: 시드의 `video_session_id = 00000000-0000-4000-8000-000000005001` (`lib/demo.ts` `DEMO_VIDEO_SESSION_ID`).
+- 의원 콘솔은 `source = call` 사진을 회차별로 묶어 보여 주고, 최신 회차를 먼저 보여 준다(H3). 플랫폼으로 따로 알림은 보내지 않는다. 콘솔은 열람할 때 조회한다.
+
 ## 변경 이력
 - 2026-10-24 초안
 - 2026-10-24 H3: 인증(UUID)·여는 방식(새 탭)·종료 신호(A)·returnUrl 확정, `lib/video.ts` 구현
 - 2026-10-24 H3: 화면 경로가 `/[lang]/...`로 바뀌어 returnUrl에 언어 구간 추가 (`docs/i18n.md`)
 - 2026-10-24 H3: 통역 = video 자막(사용자 결정) — `interpreter` 역할 입장·통역 링크 제거
+- 2026-10-24 화상 담당(main c7eb74d): §4 통화 중 추가 촬영 추가, HTTPS 실행 메모. `role` 1:1·UUID·새 탭 제안은 H3 확정과 일치해 §1은 H3 문구 유지

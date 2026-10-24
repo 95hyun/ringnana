@@ -2,7 +2,6 @@
 
 import { ArrowRight, Check, ScanFace } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -13,28 +12,31 @@ import { Label } from "@/components/ui/label";
 import type { Dict } from "@/dictionaries/jp";
 import { CONCERN_KEYS, CONTRAINDICATION_KEYS, EXAMPLE_INTAKE, computeFlags, type ConcernKey, type ContraindicationKey } from "@/lib/intake";
 import { cn } from "@/lib/utils";
-import { submitIntake } from "../actions";
+import { submitRequest } from "../actions";
 import { ConsentDialog } from "./consent-dialog";
+import { GoalImageCard } from "./goal-image-card";
 import { ReviewCards } from "./review-cards";
 import { SamplePhotos } from "./sample-photos";
 
 type Props = {
   lang: string;
+  consultationId: string;
   greeting: string;
-  photosPath: string; // href(lang, "/photos") — 서버에서 만들어 넘긴다
   policyPath: string;
   disclaimer: string;
+  summary: React.ReactNode; // 예약 요약(서버 컴포넌트) — 폼 상단
   t: Dict["h2"]["intake"];
+  tb: Dict["booking"]["intake"];
   concerns: Dict["h2"]["concerns"];
   contraindications: Dict["h2"]["contraindications"];
+  goal: Omit<React.ComponentProps<typeof GoalImageCard>, "lang" | "consultationId" | "concerns" | "concernLabels" | "tg">;
 };
 
 const fieldLabel = "text-[13px] font-semibold leading-normal";
 const optionBox =
   "flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border bg-background px-3 text-[13px] font-medium text-muted-foreground has-checked:border-primary has-checked:bg-primary-tint has-checked:font-semibold has-checked:text-primary-hover has-focus-visible:ring-2 has-focus-visible:ring-ring";
 
-export function IntakeForm({ lang, greeting, photosPath, policyPath, disclaimer, t, concerns, contraindications }: Props) {
-  const router = useRouter();
+export function IntakeForm({ lang, consultationId, greeting, policyPath, disclaimer, summary, t, tb, concerns, contraindications, goal }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   // 예시 채우기 때문에 입력을 모두 제어 컴포넌트로 둔다
@@ -43,9 +45,9 @@ export function IntakeForm({ lang, greeting, photosPath, policyPath, disclaimer,
   // 금기 문항은 '선택 안 함'을 허용하지 않는다 — 모두 はい/いいえ 중 하나
   const [answers, setAnswers] = useState<Partial<Record<ContraindicationKey, boolean>>>({});
   const [consentOpen, setConsentOpen] = useState(false);
-  const [flagged, setFlagged] = useState<{ intakeId: string; flags: ContraindicationKey[] } | null>(null);
+  // 같은 시간에 다른 신청이 먼저 들어간 경우 — 의사 프로필로 돌려보낸다
+  const [slotTaken, setSlotTaken] = useState<string | null>(null);
   const unanswered = CONTRAINDICATION_KEYS.filter((k) => answers[k] === undefined).length;
-  const toPhotos = (intakeId: string) => router.push(`${photosPath}?intake=${intakeId}`);
 
   function fillExample() {
     setSelected([...EXAMPLE_INTAKE.concerns]);
@@ -76,32 +78,24 @@ export function IntakeForm({ lang, greeting, photosPath, policyPath, disclaimer,
     const fd = new FormData(formRef.current);
     setConsentOpen(false);
     startTransition(async () => {
-      const res = await submitIntake(fd);
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
-      if (res.flags.length > 0) setFlagged({ intakeId: res.intakeId, flags: res.flags });
-      else toPhotos(res.intakeId);
+      // 성공하면 서버 action이 신청 완료 화면으로 redirect한다 (금기 플래그 안내도 그 화면에서)
+      const res = await submitRequest(fd);
+      if (res.slotTaken) setSlotTaken(res.slotTaken.doctorPath);
+      else toast.error(res.error);
     });
   }
 
-  if (flagged) {
+  if (slotTaken) {
     return (
-      <Card className="mx-auto w-full max-w-md border-warning-border bg-warning-tint" data-testid="intake-flag-notice">
+      <Card className="mx-auto w-full max-w-md border-warning-border bg-warning-tint" data-testid="intake-slot-taken">
         <CardHeader>
-          <CardTitle>{t.flagTitle}</CardTitle>
-          <CardDescription>{t.flagBody}</CardDescription>
+          <CardTitle className="font-semibold text-warning-foreground">{tb.slotTaken.title}</CardTitle>
+          <CardDescription>{tb.slotTaken.body}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <ul className="list-disc pl-5 text-sm">
-            {flagged.flags.map((k) => (
-              <li key={k}>{contraindications[k]}</li>
-            ))}
-          </ul>
-          <Button size="lg" onClick={() => toPhotos(flagged.intakeId)}>
-            {t.flagCta}
-          </Button>
+        <CardContent>
+          <Link href={slotTaken} className={buttonVariants({ size: "lg", className: "w-full" })}>
+            {tb.slotTaken.cta}
+          </Link>
         </CardContent>
       </Card>
     );
@@ -110,6 +104,8 @@ export function IntakeForm({ lang, greeting, photosPath, policyPath, disclaimer,
   return (
     <form ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-8 md:gap-10">
       <input type="hidden" name="lang" value={lang} />
+      <input type="hidden" name="consultationId" value={consultationId} />
+      {summary}
 
       <section className="flex flex-col gap-4 rounded-2xl bg-blush-tint p-5 md:px-9 md:py-8">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-blush">
@@ -123,10 +119,11 @@ export function IntakeForm({ lang, greeting, photosPath, policyPath, disclaimer,
             <Button type="button" variant="outline" className="h-[42px] px-[18px] text-[13px] font-semibold" onClick={fillExample} data-testid="intake-example">
               {t.hero.tryExample}
             </Button>
-            <Link href={photosPath} className={buttonVariants({ variant: "outline", className: "h-[42px] px-[18px] text-[13px] font-semibold" })}>
+            {/* 구 /photos 이동 대신 문진 안의 목표 이미지 카드로 스크롤 */}
+            <a href="#goal-image" className={buttonVariants({ variant: "outline", className: "h-[42px] px-[18px] text-[13px] font-semibold" })}>
               <ScanFace className="size-4" aria-hidden />
               {t.hero.scanFace}
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -234,6 +231,8 @@ export function IntakeForm({ lang, greeting, photosPath, policyPath, disclaimer,
           </div>
         </section>
       </div>
+
+      <GoalImageCard lang={lang} consultationId={consultationId} concerns={selected} concernLabels={concerns} tg={tb.goal} {...goal} />
 
       <section className="flex flex-col gap-6" aria-labelledby="intake-review-title">
         <div className="flex flex-col gap-1.5">

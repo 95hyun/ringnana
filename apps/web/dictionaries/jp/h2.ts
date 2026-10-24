@@ -37,7 +37,7 @@ const h2 = {
     birthYear: "生まれた年（任意）",
     email: "メールアドレス",
     password: "パスワード",
-    submitSignup: "登録して問診へ進む",
+    submitSignup: "登録して医師を探す",
     submitLogin: "ログイン",
     errors: {
       missing: "メールアドレスとパスワードを入力してください",

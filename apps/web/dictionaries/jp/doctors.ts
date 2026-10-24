@@ -1,4 +1,56 @@
 // flow-v2 작업 2(의사 탐색·프로필·시간 선택) 소유 — 키를 추가하면 ko/doctors.ts에도 같은 키를 넣는다
-const doctors = {};
+const doctors = {
+  list: {
+    eyebrow: "医師を探す",
+    title: "お悩みに合わせて医師を選ぶ",
+    lead: "お悩み・相談できる日・言語・エリアで絞り込めます。並び順は「最も早く相談できる時間」の順です。",
+    filterConcern: "お悩み",
+    filterDate: "相談できる日",
+    dateFrom: "開始日",
+    dateTo: "終了日",
+    filterLang: "対応言語",
+    filterArea: "エリア",
+    any: "指定なし",
+    apply: "この条件で探す",
+    reset: "条件をクリア",
+    count: "{n}名の医師が見つかりました",
+    empty: "条件に合う医師が見つかりませんでした。",
+    emptyHint: "条件をゆるめて、もう一度お試しください。",
+    earliest: "最短の相談時間",
+    noSlot: "現在、空き時間はありません",
+    viewProfile: "プロフィールを見る",
+    loading: "読み込み中…",
+  },
+  areas: {
+    gangnam: "江南(カンナム)",
+    myeongdong: "明洞(ミョンドン)",
+    apgujeong: "狎鴎亭(アックジョン)",
+  },
+  languages: {
+    ja: "日本語",
+    ko: "韓国語",
+    en: "英語",
+  },
+  profile: {
+    back: "医師一覧へ",
+    about: "紹介",
+    specialties: "得意なお悩み",
+    languages: "対応言語",
+    clinic: "クリニック",
+    address: "住所",
+    station: "最寄り駅",
+    map: "Map",
+    slotsTitle: "相談できる時間",
+    slotsLead: "ご希望の時間を選んでください(日本時間・韓国時間)。",
+    slotsEmpty: "今後14日間に空き時間はありません。",
+    book: "この時間で予約する",
+    pickSlot: "時間を選ぶと予約に進めます",
+    noBio: "紹介文は準備中です。",
+  },
+  errors: {
+    slotUnavailable: "この時間はすでに予約できません。別の時間をお選びください。",
+    failed: "予約の準備に失敗しました。もう一度お試しください。",
+  },
+};
 
 export default doctors;

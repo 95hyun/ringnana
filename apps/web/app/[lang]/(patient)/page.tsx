@@ -37,7 +37,7 @@ export default async function Landing({ params }: PageProps<"/[lang]">) {
           ))}
         </div>
         <div className="relative flex flex-col gap-2 pt-2 md:max-w-sm">
-          <Link href={href(lang, "/intake")} className={buttonVariants({ size: "lg" })}>
+          <Link href={href(lang, "/doctors")} className={buttonVariants({ size: "lg" })}>
             {t.cta}
           </Link>
           <p className="text-xs text-muted-foreground">{t.footnote}</p>

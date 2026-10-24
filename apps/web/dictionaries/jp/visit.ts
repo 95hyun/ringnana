@@ -1,4 +1,70 @@
 // flow-v2 작업 4(의원 수락·거절·진료 완료) 소유 — 키를 추가하면 ko/visit.ts에도 같은 키를 넣는다
-const visit = {};
+// clinic = 의원 콘솔(한국어 그대로, docs/i18n.md), room·done = 환자 화면
+const visit = {
+  clinic: {
+    // h3.clinic.labels.status에 없는 flow-v2 상태 + "신규 신청" 표기
+    status: { requested: "신규 신청", declined: "거절됨", cancelled: "취소됨", draft: "작성 중" } as Record<string, string>,
+    queue: {
+      scheduledAt: "상담 시각",
+      newCount: "신규 신청 {n}건 — 문진을 확인하고 수락 또는 거절하세요.",
+    },
+    decision: {
+      eyebrow: "신규 신청",
+      title: "예약 신청을 확인하세요",
+      body: "문진과 사진을 검토한 뒤 수락하면 예약이 확정됩니다. 수락 전에는 화상 진료를 시작하거나 견적을 확정할 수 없습니다.",
+      scheduledAt: "희망 상담 시각",
+      unscheduled: "시각 미정",
+      accept: "신청 수락",
+      decline: "거절",
+      acceptTitle: "이 신청을 수락할까요?",
+      acceptPrompt: "수락하면 환자 화면에 예약 확정이 표시됩니다.",
+      declineTitle: "신청을 거절할까요?",
+      declinePrompt: "환자에게 거절 사유가 표시되고, 상담 시간은 다시 예약 가능 상태가 됩니다.",
+      reasonLabel: "거절 사유 (필수)",
+      reasonPlaceholder: "예: 해당 시술은 대면 진료가 먼저 필요합니다",
+      cancel: "취소",
+      acceptedToast: "신청을 수락했습니다. 예약이 확정되었습니다.",
+      declinedToast: "신청을 거절했습니다.",
+      errors: {
+        reasonRequired: "거절 사유를 입력하세요.",
+        stale: "이미 처리된 신청입니다. 화면을 새로 고칩니다.",
+        db: "처리 실패:",
+      },
+    },
+    lockedNote: "신청을 수락한 뒤 진료를 시작할 수 있습니다.",
+    briefLocked: "신청 수락 전 — 소견·견적은 검토만 할 수 있습니다.",
+    declinedTitle: "거절한 신청",
+    declinedReason: "사유: {reason}",
+    cancelledTitle: "환자가 취소한 신청입니다.",
+  },
+  room: {
+    eyebrow: "オンライン診察",
+    requestedTitle: "医師の確認待ち",
+    requestedBody: "医師が問診を確認しています。予約が確定すると、このページと「予約一覧」に表示されます。",
+    toReservations: "予約一覧を見る",
+    scheduledTitle: "予約が確定しました",
+    scheduledBody: "診察の10分前、または医師が診察を開始すると入室ボタンが有効になります。ページを開いたままお待ちください。",
+    joinLocked: "診察10分前から入室できます",
+    inCallTitle: "医師の準備ができました",
+    declinedTitle: "今回の予約はお受けできませんでした",
+    declinedReason: "医師からのメッセージ",
+    declinedBody: "別の医師・日時でもう一度ご予約いただけます。",
+    findDoctor: "ほかの医師を探す",
+    cancelledTitle: "この予約はキャンセルされました",
+    doctorTitleFallback: "皮膚科医",
+  },
+  done: {
+    eyebrow: "診察完了",
+    title: "診察お疲れさまでした",
+    summary: "診察の概要",
+    scheduledAt: "診察日時",
+    nextTitle: "次のステップ",
+    noteReady: "医師のノートと見積もりが届きました。来院前に内容をご確認ください。",
+    viewNote: "医師のノートを見る",
+    notePending: "医師がノートを作成中です",
+    notePendingBody: "作成が終わると、このページに自動で表示されます。ページを開いたままお待ちください。",
+    toReservations: "予約一覧へ",
+  },
+};
 
 export default visit;

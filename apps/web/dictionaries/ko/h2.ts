@@ -38,7 +38,7 @@ const h2 = {
     birthYear: "출생 연도(선택)",
     email: "이메일",
     password: "비밀번호",
-    submitSignup: "가입하고 문진으로",
+    submitSignup: "가입하고 의사 찾기",
     submitLogin: "로그인",
     errors: {
       missing: "이메일과 비밀번호를 입력해 주세요",

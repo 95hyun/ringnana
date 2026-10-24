@@ -11,7 +11,9 @@ import { getDict, href, isLang, type Lang } from "@/lib/i18n";
 import { CONTRAINDICATION_KEYS } from "@/lib/intake";
 import { patientName, treatmentName } from "@/lib/localize";
 import type { Dict } from "@/dictionaries/jp";
-import { buildRoomUrl, platformUrl } from "@/lib/video";
+import { buildRoomUrl, platformUrl, returnPath } from "@/lib/video";
+import { formatDateTime } from "@/lib/format";
+import { CLINIC_TIME_ZONE } from "@/lib/market";
 import { AutoRefresh } from "../../_components/auto-refresh";
 import { requestOrigin } from "../../_components/origin";
 import { fmt, formatKrw, label, tripDays, type H3Dict } from "../../_components/labels";
@@ -21,6 +23,7 @@ import { CallPhotos, groupCallPhotos } from "./_components/call-photos";
 import { DisclaimerBar } from "@/components/ui/disclaimer-bar";
 import { SampleImage } from "@/components/ui/sample-image";
 import { BriefWorkspace } from "./_components/brief-workspace";
+import { DecisionPanel } from "./_components/decision-panel";
 import { PhotoReference, type AnglePhoto } from "./_components/photo-reference";
 
 const ANGLE_ORDER = ["front", "left", "right"];
@@ -33,14 +36,14 @@ const monthDay = (iso: string) => {
 
 const isoDateFromToday = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 
-async function ConsultDetail({ id, lang, t, dict }: { id: string; lang: Lang; t: H3Dict["clinic"]; dict: Pick<Dict, "common"> }) {
+async function ConsultDetail({ id, lang, t, dict }: { id: string; lang: Lang; t: H3Dict["clinic"]; dict: Pick<Dict, "common" | "visit"> }) {
   const L = t.labels;
   const tc = t.consult;
   const db = supabaseServer();
   const { data: c } = await db
     .from("consultations")
     .select(
-      "id, status, notes, video_session_id, patient_id, intake_id, patients(name, name_latin, birth_year, country), doctors(name), intakes(concerns, flags, contraindications, trip_start, trip_end)",
+      "id, status, notes, video_session_id, patient_id, intake_id, scheduled_at, decline_reason, patients(name, name_latin, birth_year, country), doctors(name), intakes(concerns, flags, contraindications, trip_start, trip_end)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -82,7 +85,7 @@ async function ConsultDetail({ id, lang, t, dict }: { id: string; lang: Lang; t:
 
   const origin = await requestOrigin();
   const sessionId = c.video_session_id;
-  const doctorUrl = buildRoomUrl({ sessionId, role: "doctor", name: c.doctors?.name ?? tc.doctorFallback, lang: "ko", returnUrl: platformUrl(href(lang, `/clinic/consult/${id}?ended=1`), origin) });
+  const doctorUrl = buildRoomUrl({ sessionId, role: "doctor", name: c.doctors?.name ?? tc.doctorFallback, lang: "ko", returnUrl: platformUrl(returnPath("doctor", id, lang), origin) });
 
   const intake = c.intakes;
   // 문진 응답 원본(jsonb) — 예/아니오 전체를 보여 준다. 없는 키는 미응답(H2 문항 추가 이전 데이터)
@@ -99,6 +102,10 @@ async function ConsultDetail({ id, lang, t, dict }: { id: string; lang: Lang; t:
   const defaultValidUntil = isoDateFromToday(30);
 
   const tb = t.brief;
+  const tv = dict.visit.clinic;
+  const statusLabels = { ...L.status, ...tv.status };
+  // flow-v2: 수락 전·거절·취소 진료는 소견·견적을 열람만 (fieldset disabled로 버튼·입력 일괄 비활성)
+  const decided = c.status === "scheduled" || c.status === "in_call" || c.status === "done";
   const concerns = intake?.concerns ?? [];
   const flagLabels = (intake?.flags ?? []).map((f) => label(L.flags, f));
   // 환자가 문진에서 실제로 본 일본어 라벨(H2 사전) — "원래 고민" 표시용
@@ -138,8 +145,8 @@ async function ConsultDetail({ id, lang, t, dict }: { id: string; lang: Lang; t:
           <p className="text-[13px] text-muted-foreground">{tc.subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Badge variant={c.status === "requested" ? "default" : c.status === "in_call" ? "hold" : "outline"}>{label(L.status, c.status)}</Badge>
-          <CallControls consultationId={c.id} status={c.status} doctorUrl={doctorUrl} t={t.call} />
+          <Badge variant={c.status === "requested" ? "default" : c.status === "in_call" ? "hold" : "outline"}>{label(statusLabels, c.status)}</Badge>
+          <CallControls consultationId={c.id} status={c.status} doctorUrl={doctorUrl} t={t.call} lockedNote={tv.lockedNote} />
         </div>
       </div>
 
@@ -245,6 +252,24 @@ async function ConsultDetail({ id, lang, t, dict }: { id: string; lang: Lang; t:
         </div>
 
         <div className="flex min-w-0 flex-col gap-5 md:col-span-5">
+          {c.status === "requested" ? (
+            <DecisionPanel
+              consultationId={c.id}
+              scheduledAt={c.scheduled_at ? formatDateTime(c.scheduled_at, lang, CLINIC_TIME_ZONE) : tv.decision.unscheduled}
+              t={tv.decision}
+            />
+          ) : c.status === "declined" || c.status === "cancelled" ? (
+            <div className="flex flex-col gap-2 rounded-lg border border-warning-border bg-warning-tint p-4" data-decided={c.status}>
+              <p className="flex items-center gap-2 text-[13px] font-semibold text-warning-foreground">
+                <TriangleAlert className="size-4 shrink-0" aria-hidden />
+                {c.status === "declined" ? tv.declinedTitle : tv.cancelledTitle}
+              </p>
+              {c.status === "declined" && c.decline_reason ? (
+                <p className="text-[13px] leading-relaxed text-warning">{fmt(tv.declinedReason, { reason: c.decline_reason })}</p>
+              ) : null}
+            </div>
+          ) : null}
+          {!decided ? <p className="text-xs text-muted-foreground" data-brief-locked>{tv.briefLocked}</p> : null}
           {locked ? (
             <>
               {flagCard}
@@ -279,23 +304,25 @@ async function ConsultDetail({ id, lang, t, dict }: { id: string; lang: Lang; t:
               </Card>
             </>
           ) : (
-            <BriefWorkspace
-              consultationId={c.id}
-              initialNotes={c.notes ?? ""}
-              initialItems={items}
-              initialValidUntil={quote?.valid_until ?? defaultValidUntil}
-              tripDates={tripDates}
-              flagCard={flagCard}
-              liveFooter={
-                c.status === "in_call" ? (
-                  <>
-                    <EndCallButton consultationId={c.id} t={t.call} />
-                    <p className="text-xs leading-relaxed text-muted-foreground">{tb.liveNote}</p>
-                  </>
-                ) : undefined
-              }
-              t={{ brief: t.brief, quote: t.quote }}
-            />
+            <fieldset disabled={!decided} className="min-w-0 disabled:opacity-60">
+              <BriefWorkspace
+                consultationId={c.id}
+                initialNotes={c.notes ?? ""}
+                initialItems={items}
+                initialValidUntil={quote?.valid_until ?? defaultValidUntil}
+                tripDates={tripDates}
+                flagCard={flagCard}
+                liveFooter={
+                  c.status === "in_call" ? (
+                    <>
+                      <EndCallButton consultationId={c.id} t={t.call} />
+                      <p className="text-xs leading-relaxed text-muted-foreground">{tb.liveNote}</p>
+                    </>
+                  ) : undefined
+                }
+                t={{ brief: t.brief, quote: t.quote }}
+              />
+            </fieldset>
           )}
         </div>
       </div>
@@ -319,7 +346,7 @@ export default async function ClinicConsultPage({ params }: PageProps<"/[lang]/c
 }
 
 // [id]는 런타임 값 — Suspense 안에서 await (cacheComponents)
-async function ConsultDetailLoader({ params, lang, t, dict }: { params: Promise<{ id: string }>; lang: Lang; t: H3Dict["clinic"]; dict: Pick<Dict, "common"> }) {
+async function ConsultDetailLoader({ params, lang, t, dict }: { params: Promise<{ id: string }>; lang: Lang; t: H3Dict["clinic"]; dict: Pick<Dict, "common" | "visit"> }) {
   const { id } = await params;
   return <ConsultDetail id={id} lang={lang} t={t} dict={dict} />;
 }

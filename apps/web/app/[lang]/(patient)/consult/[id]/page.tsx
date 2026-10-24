@@ -1,108 +1,153 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { lang as rootLang } from "next/root-params";
+import { connection } from "next/server";
 import { Suspense } from "react";
-import { PatientStepper } from "@/components/shell/patient-stepper";
-import { buttonVariants } from "@/components/ui/button";
+import { TriangleAlert } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { DisclaimerBar } from "@/components/ui/disclaimer-bar";
 import { AutoRefresh } from "@/app/[lang]/clinic/_components/auto-refresh";
-import { fmt, type H3Dict } from "@/app/[lang]/clinic/_components/labels";
+import { fmt } from "@/app/[lang]/clinic/_components/labels";
 import { requestOrigin } from "@/app/[lang]/clinic/_components/origin";
 import { getDict, href, htmlLang, isLang, type Lang } from "@/lib/i18n";
-import { localized } from "@/lib/localize";
 import { formatAppointment } from "@/lib/format";
 import type { Dict } from "@/dictionaries/jp";
-import { supabaseServer } from "@/lib/supabase/server";
-import { buildRoomUrl, platformUrl } from "@/lib/video";
+import { buildRoomUrl, platformUrl, returnPath } from "@/lib/video";
+import { DoctorRowCard } from "./_components/doctor-row";
+import { canJoin, loadVisit } from "./_components/visit";
 
-async function ConsultRoom({ params, lang, t, dict }: { params: Promise<{ id: string }>; lang: Lang; t: H3Dict["consult"]; dict: Pick<Dict, "common"> }) {
+type RoomDict = Pick<Dict, "common" | "h3" | "visit">;
+
+async function ConsultRoom({ params, lang, dict }: { params: Promise<{ id: string }>; lang: Lang; dict: RoomDict }) {
+  await connection();
   const { id } = await params;
-  const { data: c } = await supabaseServer()
-    .from("consultations")
-    .select("id, status, scheduled_at, video_session_id, patients(name), doctors(name_ja, name, specialty, clinics(name, name_ja))")
-    .eq("id", id)
-    .maybeSingle();
-  if (!c) notFound();
+  const c = await loadVisit(id);
+  // 문진 작성 중이면 문진으로, 끝난 진료는 진료 완료 화면으로
+  if (c.status === "draft") redirect(href(lang, `/consult/${c.id}/intake`));
+  if (c.status === "done") redirect(href(lang, `/consult/${c.id}/done`));
 
+  const t = dict.h3.consult;
+  const v = dict.visit.room;
   const origin = await requestOrigin();
-  // 통화 종료 후 견적 화면으로 — /quote/[id]의 id = consultation id (H4 구현과 일치)
   const roomUrl = buildRoomUrl({
     sessionId: c.video_session_id,
     role: "patient",
     name: c.patients?.name ?? undefined,
     lang: htmlLang(lang) === "ko" ? "ko" : "ja",
-    returnUrl: platformUrl(href(lang, `/quote/${c.id}`), origin),
+    returnUrl: platformUrl(returnPath("patient", c.id, lang), origin),
   });
-  const doctor = localized(c.doctors, lang);
-  const clinic = localized(c.doctors?.clinics, lang);
-  // specialty는 _ja 컬럼이 없는 한국어 원문 — 사전에 있으면 현지화
-  const specialty = c.doctors?.specialty ? (t.specialties[c.doctors.specialty] ?? c.doctors.specialty) : null;
+  // 서버 렌더 시각 기준 — AutoRefresh(5초)가 다시 그리므로 10분 전이 되면 버튼이 켜진다
+  const joinable = canJoin(c.status, c.scheduled_at);
+  const live = c.status === "requested" || c.status === "scheduled" || c.status === "in_call";
+  const when = c.scheduled_at ? formatAppointment(c.scheduled_at, lang, dict) : t.schedulePending;
+  const heroTitle =
+    c.status === "requested"
+      ? v.requestedTitle
+      : c.status === "scheduled"
+        ? v.scheduledTitle
+        : c.status === "in_call"
+          ? v.inCallTitle
+          : c.status === "declined"
+            ? v.declinedTitle
+            : c.status === "cancelled"
+              ? v.cancelledTitle
+              : t.title;
   const contactHref = `mailto:${t.contactEmail}?subject=${encodeURIComponent(fmt(t.contactSubject, { id: c.id.slice(0, 8) }))}`;
 
+  const joinButton = roomUrl ? (
+    joinable ? (
+      <a href={roomUrl} className={buttonVariants({ size: "lg", className: "h-12 w-full" })} data-join>
+        {t.join}
+      </a>
+    ) : (
+      <Button size="lg" className="h-12 w-full" disabled data-join-locked>
+        {v.joinLocked}
+      </Button>
+    )
+  ) : (
+    <p className="text-sm text-muted-foreground" data-video-missing>
+      {t.videoMissing}
+    </p>
+  );
+
   return (
-    <div className="flex flex-1 flex-col gap-6 py-4" data-consultation={c.id} data-status={c.status}>
-      {c.status !== "done" ? <AutoRefresh /> : null}
-      <PatientStepper lang={lang} current="consult" />
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold">{t.title}</h1>
+    <div data-layout="wide" className="flex flex-col gap-6" data-consultation={c.id} data-status={c.status}>
+      {live ? <AutoRefresh /> : null}
+
+      <section className="flex flex-col gap-3 rounded-xl border border-blush/15 bg-blush-tint p-5 md:p-6" data-hero>
+        <p className="text-[11px] font-semibold tracking-wide text-blush uppercase">{v.eyebrow}</p>
+        <h1 className="text-[22px] font-bold leading-tight md:text-[26px]">{heroTitle}</h1>
+        {c.status !== "declined" && c.status !== "cancelled" ? (
+          <p className="text-[13px] font-medium text-blush tabular-nums" data-schedule>
+            {when}
+          </p>
+        ) : null}
+      </section>
+
+      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-12">
+        <div className="flex flex-col gap-4 md:col-span-7">
+          <Card className="gap-5 p-4 md:p-5">
+            <DoctorRowCard doctor={c.doctors} lang={lang} titleFallback={v.doctorTitleFallback} />
+
+            {c.status === "requested" ? (
+              <div className="flex flex-col gap-3 border-t pt-4" data-waiting>
+                <p className="text-[15px] leading-[1.8]">{v.requestedBody}</p>
+                <Link href={href(lang, "/reservations")} className={buttonVariants({ variant: "outline", size: "lg", className: "w-full" })} data-reservations>
+                  {v.toReservations}
+                </Link>
+              </div>
+            ) : c.status === "scheduled" || c.status === "in_call" ? (
+              <div className="flex flex-col gap-3 border-t pt-4" data-room>
+                <p className="text-[15px] leading-[1.8]">{c.status === "in_call" ? t.ready : v.scheduledBody}</p>
+                {joinButton}
+                <p className="text-xs text-muted-foreground">{t.interpreterNote}</p>
+              </div>
+            ) : c.status === "declined" ? (
+              <div className="flex flex-col gap-3 border-t pt-4" data-declined>
+                {c.decline_reason ? (
+                  // 거절은 경고 계열(빨강은 응급 안내 전용, docs/design.md)
+                  <div className="flex flex-col gap-2 rounded-lg border border-warning-border bg-warning-tint p-4">
+                    <p className="flex items-center gap-2 text-[13px] font-semibold text-warning-foreground">
+                      <TriangleAlert className="size-4 shrink-0" aria-hidden />
+                      {v.declinedReason}
+                    </p>
+                    <p className="text-[13px] leading-relaxed whitespace-pre-wrap text-warning" data-decline-reason>
+                      {c.decline_reason}
+                    </p>
+                  </div>
+                ) : null}
+                <p className="text-[15px] leading-[1.8]">{v.declinedBody}</p>
+                <Link href={href(lang, "/doctors")} className={buttonVariants({ size: "lg", className: "h-12 w-full" })} data-find-doctor>
+                  {v.findDoctor}
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3 border-t pt-4">
+                <Link href={href(lang, "/reservations")} className={buttonVariants({ variant: "outline", size: "lg", className: "w-full" })}>
+                  {v.toReservations}
+                </Link>
+              </div>
+            )}
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-4 md:col-span-5">
+          {c.status !== "declined" && c.status !== "cancelled" ? (
+            <Card className="gap-3 p-5 md:p-6">
+              <h2 className="text-base font-semibold">{t.scheduleTitle}</h2>
+              <p className="text-[15px] font-medium tabular-nums">{when}</p>
+            </Card>
+          ) : null}
+          {live ? (
+            <a href={contactHref} className="text-center text-sm text-muted-foreground underline underline-offset-4" data-contact>
+              {t.contact}
+            </a>
+          ) : null}
+        </div>
       </div>
 
-      {c.status !== "done" ? (
-        <div className="flex flex-col gap-1 rounded-lg border bg-muted/30 p-3" data-schedule>
-          <span className="text-xs text-muted-foreground">{t.scheduleTitle}</span>
-          <span className="font-medium">{c.scheduled_at ? formatAppointment(c.scheduled_at, lang, dict) : t.schedulePending}</span>
-        </div>
-      ) : null}
-
-      {doctor ? (
-        <div className="flex items-center gap-3 rounded-lg border p-3" data-doctor-profile>
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-bold" aria-hidden>
-            {doctor.slice(0, 1)}
-          </div>
-          <div className="flex flex-col text-sm">
-            <span className="font-medium">{fmt(t.doctor, { name: doctor })}</span>
-            {specialty ? <span className="text-muted-foreground">{specialty}</span> : null}
-            {clinic ? <span className="text-muted-foreground">{clinic}</span> : null}
-          </div>
-        </div>
-      ) : null}
-
-      {c.status === "done" ? (
-        <div className="flex flex-col gap-3 rounded-lg border p-4">
-          <p>{t.doneText}</p>
-          <Link href={href(lang, `/quote/${c.id}`)} className={buttonVariants({ size: "lg" })}>
-            {t.viewQuote}
-          </Link>
-        </div>
-      ) : c.status === "in_call" ? (
-        <div className="flex flex-col gap-3 rounded-lg border border-primary p-4">
-          <p className="font-medium">{t.ready}</p>
-          {roomUrl ? (
-            <a href={roomUrl} className={buttonVariants({ size: "lg" })} data-join>
-              {t.join}
-            </a>
-          ) : (
-            <p className="text-sm text-destructive" data-video-missing>
-              {t.videoMissing}
-            </p>
-          )}
-          <p className="text-xs text-muted-foreground">{t.interpreterNote}</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3 rounded-lg border p-4" data-waiting>
-          <p className="font-medium">{t.waitingTitle}</p>
-          <p className="text-sm text-muted-foreground">{t.waitingBody}</p>
-          <span className="inline-flex h-10 items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">{t.waiting}</span>
-        </div>
-      )}
-
       <DisclaimerBar>{dict.common.disclaimer}</DisclaimerBar>
-
-      {c.status !== "done" ? (
-        <a href={contactHref} className="text-center text-sm text-muted-foreground underline underline-offset-4" data-contact>
-          {t.contact}
-        </a>
-      ) : null}
     </div>
   );
 }
@@ -111,10 +156,9 @@ export default async function PatientConsultPage({ params }: PageProps<"/[lang]/
   const lang = await rootLang();
   if (!isLang(lang)) notFound();
   const dict = await getDict(lang);
-  const t = dict.h3.consult;
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">{t.loading}</p>}>
-      <ConsultRoom params={params} lang={lang} t={t} dict={dict} />
+    <Suspense fallback={<p className="text-sm text-muted-foreground">{dict.h3.consult.loading}</p>}>
+      <ConsultRoom params={params} lang={lang} dict={dict} />
     </Suspense>
   );
 }

@@ -14,6 +14,8 @@ type Props = {
   status: string;
   doctorUrl: string | null;
   t: CallDict;
+  // 수락 전(requested) 안내 — visit 사전 문구
+  lockedNote?: string;
 };
 
 // 서버 액션 실패가 에러 바운더리로 번져 데모 화면이 날아가지 않게 토스트로만 알린다
@@ -30,7 +32,7 @@ function useCallAction(t: CallDict) {
   return { pending, run };
 }
 
-export function CallControls({ consultationId, status, doctorUrl, t }: Props) {
+export function CallControls({ consultationId, status, doctorUrl, t, lockedNote }: Props) {
   const { run } = useCallAction(t);
 
   return (
@@ -39,7 +41,17 @@ export function CallControls({ consultationId, status, doctorUrl, t }: Props) {
         <p className="text-sm text-destructive" data-video-missing>
           {t.missingVideo}
         </p>
-      ) : status !== "done" ? (
+      ) : status === "requested" ? (
+        // flow-v2: 의원이 신청을 수락(scheduled)하기 전에는 시작할 수 없다
+        <>
+          <span className="text-xs text-muted-foreground" data-start-locked>
+            {lockedNote}
+          </span>
+          <Button variant="outline" size="lg" disabled data-start-call>
+            {t.start}
+          </Button>
+        </>
+      ) : status === "scheduled" || status === "in_call" ? (
         // 링크 이동은 동기로 새 탭을 열고(팝업 차단 회피) 상태 변경은 병행한다. Primary는 견적 확정 하나라 outline
         <a
           href={doctorUrl}

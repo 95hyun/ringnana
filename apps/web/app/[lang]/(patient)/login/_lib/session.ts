@@ -61,7 +61,7 @@ export async function requirePatient(lang: Lang, path: string): Promise<CurrentP
 // 로그인 후 이동 경로 — 앱 내부 경로만 허용 (브라우저는 '/\\host'를 '//host'로 해석하므로 백슬래시도 거부)
 export function safeNext(v: unknown, lang: Lang): string {
   const s = typeof v === "string" ? v : "";
-  return s.startsWith("/") && !s.startsWith("//") && !s.includes("\\") ? s : href(lang, "/intake");
+  return s.startsWith("/") && !s.startsWith("//") && !s.includes("\\") ? s : href(lang, "/doctors");
 }
 
 // 비밀번호 검증 전용 anon 클라이언트 (DB 접근 없음)

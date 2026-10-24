@@ -1,36 +1,26 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { lang as rootLang } from "next/root-params";
 import { Suspense } from "react";
 import { getDict, href, isLang, type Lang } from "@/lib/i18n";
-import { requirePatient } from "../login/_lib/session";
-import { IntakeForm } from "./_components/intake-form";
+import { currentPatientId } from "../login/_lib/session";
+import { latestDraftId } from "../reservations/_lib/booking";
 
-async function IntakeBody({ lang }: { lang: Lang }) {
-  const [patient, dict] = await Promise.all([requirePatient(lang, "/intake"), getDict(lang)]);
-  const t = dict.h2;
-  return (
-    <IntakeForm
-      lang={lang}
-      greeting={t.intake.greeting.replace("{name}", patient.name)}
-      photosPath={href(lang, "/photos")}
-      policyPath={href(lang, "/legal/privacy")}
-      disclaimer={dict.common.disclaimer}
-      t={t.intake}
-      concerns={t.concerns}
-      contraindications={t.contraindications}
-    />
-  );
+// flow-v2: 문진은 예약에 귀속(/consult/{id}/intake). 옛 경로는 최신 draft 진료 문진으로, 없으면 의사 찾기로
+async function Forward({ lang }: { lang: Lang }) {
+  const patientId = await currentPatientId();
+  const draft = patientId ? await latestDraftId(patientId) : null;
+  redirect(href(lang, draft ? `/consult/${draft}/intake` : "/doctors"));
+  return null;
 }
 
-export default async function IntakePage({ params }: PageProps<"/[lang]/intake">) {
-  const { lang } = await params;
+export default async function IntakePage() {
+  // params는 Suspense 밖에서 읽으면 Cache Components 프리렌더 오류 — 언어는 root param으로
+  const lang = await rootLang();
   if (!isLang(lang)) notFound();
   const dict = await getDict(lang);
   return (
-    // data-layout="wide" — PatientShell이 데스크톱에서 1200px 폭으로 넓어진다 (Figma S1 데스크톱 2단)
-    <div data-layout="wide" className="flex flex-1 flex-col gap-4 py-4">
-      <Suspense fallback={<p className="text-sm text-muted-foreground">{dict.common.states.loading}</p>}>
-        <IntakeBody lang={lang} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<p className="text-sm text-muted-foreground">{dict.common.states.loading}</p>}>
+      <Forward lang={lang} />
+    </Suspense>
   );
 }

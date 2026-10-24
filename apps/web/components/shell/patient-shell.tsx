@@ -9,7 +9,7 @@ import { DEFAULT_LANG, getDict, href, type Lang } from "@/lib/i18n";
 // 환자 앱 셸 — 기본은 모바일 폭 칼럼. 페이지에 data-layout="wide"가 있으면 전체 폭(헤더 전폭 + 본문 가운데 1200px)으로 바뀐다
 // 헤더는 자기 폭 기준(@container)으로 1줄(데스크톱, 가운데 3단계) / 3줄(모바일)을 고른다 — Figma 헤더 4:3013, 모바일 4:3171
 export async function PatientShell({ lang = DEFAULT_LANG, children }: { lang?: Lang; children: React.ReactNode }) {
-  const { common } = await getDict(lang);
+  const { common, booking } = await getDict(lang);
   const switchHref = href(lang, "/clinic");
   return (
     <div className="flex min-h-full flex-1 justify-center bg-muted">
@@ -26,6 +26,13 @@ export async function PatientShell({ lang = DEFAULT_LANG, children }: { lang?: L
               className="absolute top-0 left-1/2 hidden -translate-x-1/2 @3xl:flex"
             />
             <div className="ml-auto flex items-center gap-2 @3xl:gap-4">
+              <Link
+                href={href(lang, "/reservations")}
+                data-nav="reservations"
+                className="flex h-11 shrink-0 items-center text-[13px] font-medium whitespace-nowrap text-primary hover:text-primary-hover"
+              >
+                {booking.nav.reservations}
+              </Link>
               <LangSwitcher lang={lang} label={common.langSwitcher} />
               <Badge variant="role-patient">{common.roles.patient}</Badge>
               {/* 데모용 환자↔의원 화면 전환 (docs/design.md 적용 규칙) */}

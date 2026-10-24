@@ -1,6 +1,70 @@
 // flow-v2 작업 4(의원 수락·거절·진료 완료) 소유
 import type jp from "../jp/visit";
 
-const visit = {} satisfies typeof jp;
+const visit = {
+  clinic: {
+    status: { requested: "신규 신청", declined: "거절됨", cancelled: "취소됨", draft: "작성 중" } as Record<string, string>,
+    queue: {
+      scheduledAt: "상담 시각",
+      newCount: "신규 신청 {n}건 — 문진을 확인하고 수락 또는 거절하세요.",
+    },
+    decision: {
+      eyebrow: "신규 신청",
+      title: "예약 신청을 확인하세요",
+      body: "문진과 사진을 검토한 뒤 수락하면 예약이 확정됩니다. 수락 전에는 화상 진료를 시작하거나 견적을 확정할 수 없습니다.",
+      scheduledAt: "희망 상담 시각",
+      unscheduled: "시각 미정",
+      accept: "신청 수락",
+      decline: "거절",
+      acceptTitle: "이 신청을 수락할까요?",
+      acceptPrompt: "수락하면 환자 화면에 예약 확정이 표시됩니다.",
+      declineTitle: "신청을 거절할까요?",
+      declinePrompt: "환자에게 거절 사유가 표시되고, 상담 시간은 다시 예약 가능 상태가 됩니다.",
+      reasonLabel: "거절 사유 (필수)",
+      reasonPlaceholder: "예: 해당 시술은 대면 진료가 먼저 필요합니다",
+      cancel: "취소",
+      acceptedToast: "신청을 수락했습니다. 예약이 확정되었습니다.",
+      declinedToast: "신청을 거절했습니다.",
+      errors: {
+        reasonRequired: "거절 사유를 입력하세요.",
+        stale: "이미 처리된 신청입니다. 화면을 새로 고칩니다.",
+        db: "처리 실패:",
+      },
+    },
+    lockedNote: "신청을 수락한 뒤 진료를 시작할 수 있습니다.",
+    briefLocked: "신청 수락 전 — 소견·견적은 검토만 할 수 있습니다.",
+    declinedTitle: "거절한 신청",
+    declinedReason: "사유: {reason}",
+    cancelledTitle: "환자가 취소한 신청입니다.",
+  },
+  room: {
+    eyebrow: "온라인 진료",
+    requestedTitle: "의사 확인 대기 중",
+    requestedBody: "의사가 문진을 확인하고 있습니다. 예약이 확정되면 이 페이지와 '내 예약'에 표시됩니다.",
+    toReservations: "내 예약 보기",
+    scheduledTitle: "예약이 확정되었습니다",
+    scheduledBody: "진료 10분 전, 또는 의사가 진료를 시작하면 입장 버튼이 활성화됩니다. 페이지를 연 채로 기다려 주세요.",
+    joinLocked: "진료 10분 전부터 입장할 수 있습니다",
+    inCallTitle: "의사가 준비되었습니다",
+    declinedTitle: "이번 예약은 진행할 수 없게 되었습니다",
+    declinedReason: "의사의 메시지",
+    declinedBody: "다른 의사·일시로 다시 예약할 수 있습니다.",
+    findDoctor: "다른 의사 찾기",
+    cancelledTitle: "이 예약은 취소되었습니다",
+    doctorTitleFallback: "피부과 의사",
+  },
+  done: {
+    eyebrow: "진료 완료",
+    title: "진료 수고하셨습니다",
+    summary: "진료 요약",
+    scheduledAt: "진료 일시",
+    nextTitle: "다음 단계",
+    noteReady: "의사의 소견과 견적이 도착했습니다. 방문 전에 내용을 확인해 주세요.",
+    viewNote: "의사 소견 보기",
+    notePending: "의사가 소견을 작성 중입니다",
+    notePendingBody: "작성이 끝나면 이 페이지에 자동으로 표시됩니다. 페이지를 연 채로 기다려 주세요.",
+    toReservations: "내 예약으로",
+  },
+} satisfies typeof jp;
 
 export default visit;

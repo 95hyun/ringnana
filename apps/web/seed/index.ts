@@ -13,6 +13,9 @@ import {
   DEMO_PATIENT_ID,
   DEMO_PATIENT_PASSWORD,
   DEMO_VIDEO_SESSION_ID,
+  SEED_CLINIC_APGUJEONG_ID,
+  SEED_CLINIC_MYEONGDONG_ID,
+  SEED_DOCTOR_IDS,
 } from "../lib/demo";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -50,6 +53,7 @@ async function wipe() {
     "bookings",
     "quotes",
     "consultations",
+    "doctor_slots",
     "photos",
     "intakes",
     "patients",
@@ -89,25 +93,58 @@ async function addPhotos(patientId: string, intakeId: string, created_at?: strin
 async function main() {
   await wipe();
 
-  await must(
-    db.from("clinics").insert({
-      id: DEMO_CLINIC_ID,
-      name: "링나나 피부과의원 (가상)",
-      name_ja: "リンナナ皮膚科クリニック（架空）",
-      address: "서울특별시 강남구 가상로 123",
-    }),
-    "clinic",
-  );
-  await must(
-    db.from("doctors").insert({
-      id: DEMO_DOCTOR_ID,
-      clinic_id: DEMO_CLINIC_ID,
-      name: "김서연",
-      name_ja: "キム・ソヨン",
-      specialty: "피부과 전문의",
-    }),
-    "doctor",
-  );
+  // 의원 3곳·의사 6명 (전부 가상). specialties = 문진 고민 코드, languages = 상담 가능 언어
+  const clinics = [
+    { id: DEMO_CLINIC_ID, name: "링나나 피부과의원 (가상)", name_ja: "リンナナ皮膚科クリニック（架空）", area: "gangnam",
+      address: "서울특별시 강남구 가상로 123", address_ja: "ソウル特別市 江南区 架空路123", station: "강남역 3번 출구", station_ja: "江南駅 3番出口" },
+    { id: SEED_CLINIC_MYEONGDONG_ID, name: "명동 서울빛 피부과 (가상)", name_ja: "明洞ソウルビッ皮膚科（架空）", area: "myeongdong",
+      address: "서울특별시 중구 가상길 45", address_ja: "ソウル特別市 中区 架空キル45", station: "명동역 6번 출구", station_ja: "明洞駅 6番出口" },
+    { id: SEED_CLINIC_APGUJEONG_ID, name: "압구정 하루 피부과 (가상)", name_ja: "狎鴎亭ハル皮膚科（架空）", area: "apgujeong",
+      address: "서울특별시 강남구 가상대로 78", address_ja: "ソウル特別市 江南区 架空大路78", station: "압구정로데오역 5번 출구", station_ja: "狎鴎亭ロデオ駅 5番出口" },
+  ];
+  await must(db.from("clinics").insert(clinics), "clinics");
+
+  const title = { title: "피부과 전문의", title_ja: "皮膚科専門医" };
+  const doctors = [
+    { id: DEMO_DOCTOR_ID, clinic_id: DEMO_CLINIC_ID, name: "김서연", name_ja: "キム・ソヨン", specialties: ["melasma", "freckles", "redness"], languages: ["ko", "ja"],
+      bio: "색소 질환(기미·주근깨)과 홍조 치료를 주로 합니다. 일본어로 상담할 수 있습니다.", bio_ja: "シミ・そばかすなどの色素トラブルと赤ら顔の治療を中心に診療しています。日本語で相談できます。" },
+    { id: SEED_DOCTOR_IDS[0], clinic_id: DEMO_CLINIC_ID, name: "박지훈", name_ja: "パク・ジフン", specialties: ["acne", "acne_scar", "pores"], languages: ["ko", "en"],
+      bio: "여드름과 여드름 흉터, 모공 치료를 주로 합니다.", bio_ja: "ニキビとニキビ跡、毛穴の治療を中心に診療しています。" },
+    { id: SEED_DOCTOR_IDS[1], clinic_id: SEED_CLINIC_MYEONGDONG_ID, name: "이하은", name_ja: "イ・ハウン", specialties: ["wrinkles", "sagging", "pores"], languages: ["ko", "ja", "en"],
+      bio: "잔주름·탄력 저하 상담을 주로 합니다. 일본어·영어 상담이 가능합니다.", bio_ja: "小じわ・たるみのご相談を中心に診療しています。日本語・英語で相談できます。" },
+    { id: SEED_DOCTOR_IDS[2], clinic_id: SEED_CLINIC_MYEONGDONG_ID, name: "최민준", name_ja: "チェ・ミンジュン", specialties: ["acne_scar", "redness"], languages: ["ko", "ja"],
+      bio: "여드름 흉터와 붉은기 개선을 주로 합니다.", bio_ja: "ニキビ跡と赤みの改善を中心に診療しています。" },
+    { id: SEED_DOCTOR_IDS[3], clinic_id: SEED_CLINIC_APGUJEONG_ID, name: "정유나", name_ja: "チョン・ユナ", specialties: ["sagging", "wrinkles", "melasma"], languages: ["ko", "ja"],
+      bio: "탄력·주름과 기미를 함께 상담합니다.", bio_ja: "たるみ・しわとシミをあわせてご相談いただけます。" },
+    { id: SEED_DOCTOR_IDS[4], clinic_id: SEED_CLINIC_APGUJEONG_ID, name: "한도윤", name_ja: "ハン・ドユン", specialties: ["freckles", "melasma", "acne"], languages: ["ko", "en"],
+      bio: "주근깨·기미와 여드름 상담을 합니다.", bio_ja: "そばかす・シミとニキビのご相談を承っています。" },
+  ].map((d) => ({ ...d, specialty: title.title, ...title }));
+  await must(db.from("doctors").insert(doctors), "doctors");
+
+  // 상담 가능 시간: 내일부터 21일, 의사별 요일·시간대를 다르게 (KST, 30분)
+  const slotRows: { doctor_id: string; starts_at: string; ends_at: string }[] = [];
+  doctors.forEach((d, i) => {
+    for (let offset = 1; offset <= 21; offset++) {
+      if ((offset + i) % 4 === 0) continue; // 의사마다 쉬는 날이 다르게
+      const hours = i % 2 === 0 ? [10, 11, 14, 15, 16] : [9, 13, 17, 18];
+      for (const h of hours) {
+        const start = `${day(offset)}T${String(h).padStart(2, "0")}:00:00+09:00`;
+        const end = `${day(offset)}T${String(h).padStart(2, "0")}:30:00+09:00`;
+        slotRows.push({ doctor_id: d.id, starts_at: start, ends_at: end });
+      }
+    }
+  });
+  await must(db.from("doctor_slots").insert(slotRows), "slots");
+
+  // 기존 진료에 붙일 예약 시간(booked). 데모 진행 중 진료는 "지금부터 2시간 뒤" 슬롯
+  async function bookedSlot(doctorId: string, startsAt: string) {
+    const endsAt = new Date(new Date(startsAt).getTime() + 30 * 60_000).toISOString();
+    const [slot] = await must(
+      db.from("doctor_slots").upsert({ doctor_id: doctorId, starts_at: startsAt, ends_at: endsAt, status: "booked" }, { onConflict: "doctor_id,starts_at" }).select("id"),
+      `booked slot ${startsAt}`,
+    );
+    return slot.id;
+  }
 
   // 데모 페르소나 — 새 문진(장면 1)은 H2 화면에서 라이브로 만든다. 로그인 계정 = DEMO_PATIENT_EMAIL
   const created = await db.auth.admin.createUser({
@@ -167,13 +204,17 @@ async function main() {
       `intake ${q.name}`,
     );
     await addPhotos(p.id, intake.id);
+    const startsAt = q.status === "scheduled" ? hoursFromNow(2) : `${day(q.trip[0] - 7)}T14:00:00+09:00`;
     await must(
       db.from("consultations").insert({
         patient_id: p.id,
         doctor_id: DEMO_DOCTOR_ID,
         intake_id: intake.id,
         status: q.status,
-        scheduled_at: q.status === "scheduled" ? hoursFromNow(2) : null,
+        slot_id: await bookedSlot(DEMO_DOCTOR_ID, startsAt),
+        scheduled_at: startsAt,
+        requested_at: hoursFromNow(-3),
+        decided_at: q.status === "scheduled" ? hoursFromNow(-1) : null,
         ...(q.status === "scheduled" ? { video_session_id: DEMO_VIDEO_SESSION_ID } : {}),
       }),
       `consultation ${q.name}`,
@@ -208,6 +249,8 @@ async function main() {
         intake_id: pastIntake.id,
         status: "done",
         scheduled_at: at(-30),
+        requested_at: at(-31),
+        decided_at: at(-31),
         created_at: at(-31),
         notes: "양 볼 광대 부위 기미(표피형 위주). 피코토닝 2회 권장, 시술 후 자외선 차단 철저.",
       })
@@ -264,7 +307,7 @@ async function main() {
     "followups",
   );
 
-  const tables = ["clinics", "doctors", "patients", "intakes", "photos", "consultations", "quotes", "bookings", "followups"] as const;
+  const tables = ["clinics", "doctors", "doctor_slots", "patients", "intakes", "photos", "consultations", "quotes", "bookings", "followups"] as const;
   const counts: Record<string, number | null> = {};
   for (const t of tables) {
     const { count, error } = await db.from(t).select("*", { count: "exact", head: true });

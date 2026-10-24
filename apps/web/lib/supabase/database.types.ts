@@ -51,28 +51,28 @@ isOneToOne: false
                   ]
                 },"clinics": {
                   Row: {
-                    "address": string | null,"created_at": string,"id": string,"name": string,"name_ja": string
+                    "address": string | null,"address_ja": string | null,"area": string | null,"created_at": string,"id": string,"name": string,"name_ja": string,"station": string | null,"station_ja": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "address"?: string | null,"created_at"?: string,"id"?: string,"name": string,"name_ja": string
+                    "address"?: string | null,"address_ja"?: string | null,"area"?: string | null,"created_at"?: string,"id"?: string,"name": string,"name_ja": string,"station"?: string | null,"station_ja"?: string | null
                   }
                   Update: {
-                    "address"?: string | null,"created_at"?: string,"id"?: string,"name"?: string,"name_ja"?: string
+                    "address"?: string | null,"address_ja"?: string | null,"area"?: string | null,"created_at"?: string,"id"?: string,"name"?: string,"name_ja"?: string,"station"?: string | null,"station_ja"?: string | null
                   }
                   Relationships: [
                     
                   ]
                 },"consultations": {
                   Row: {
-                    "created_at": string,"doctor_id": string | null,"id": string,"intake_id": string | null,"notes": string | null,"patient_id": string,"scheduled_at": string | null,"status": string,"video_session_id": string
+                    "created_at": string,"decided_at": string | null,"decline_reason": string | null,"doctor_id": string | null,"id": string,"intake_id": string | null,"notes": string | null,"patient_id": string,"requested_at": string | null,"scheduled_at": string | null,"slot_id": string | null,"status": string,"video_session_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"doctor_id"?: string | null,"id"?: string,"intake_id"?: string | null,"notes"?: string | null,"patient_id": string,"scheduled_at"?: string | null,"status"?: string,"video_session_id"?: string
+                    "created_at"?: string,"decided_at"?: string | null,"decline_reason"?: string | null,"doctor_id"?: string | null,"id"?: string,"intake_id"?: string | null,"notes"?: string | null,"patient_id": string,"requested_at"?: string | null,"scheduled_at"?: string | null,"slot_id"?: string | null,"status"?: string,"video_session_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"doctor_id"?: string | null,"id"?: string,"intake_id"?: string | null,"notes"?: string | null,"patient_id"?: string,"scheduled_at"?: string | null,"status"?: string,"video_session_id"?: string
+                    "created_at"?: string,"decided_at"?: string | null,"decline_reason"?: string | null,"doctor_id"?: string | null,"id"?: string,"intake_id"?: string | null,"notes"?: string | null,"patient_id"?: string,"requested_at"?: string | null,"scheduled_at"?: string | null,"slot_id"?: string | null,"status"?: string,"video_session_id"?: string
                   }
                   Relationships: [
                     {
@@ -93,18 +93,44 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "patients"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "consultations_slot_id_fkey"
+      columns: ["slot_id"]
+isOneToOne: false
+      referencedRelation: "doctor_slots"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"doctor_slots": {
+                  Row: {
+                    "created_at": string,"doctor_id": string,"ends_at": string,"id": string,"starts_at": string,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"doctor_id": string,"ends_at": string,"id"?: string,"starts_at": string,"status"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"doctor_id"?: string,"ends_at"?: string,"id"?: string,"starts_at"?: string,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "doctor_slots_doctor_id_fkey"
+      columns: ["doctor_id"]
+isOneToOne: false
+      referencedRelation: "doctors"
+      referencedColumns: ["id"]
     }
                   ]
                 },"doctors": {
                   Row: {
-                    "clinic_id": string,"created_at": string,"id": string,"name": string,"name_ja": string | null,"specialty": string | null,"user_id": string | null
+                    "bio": string | null,"bio_ja": string | null,"clinic_id": string,"created_at": string,"id": string,"languages": (string)[],"name": string,"name_ja": string | null,"photo_path": string | null,"specialties": (string)[],"specialty": string | null,"title": string | null,"title_ja": string | null,"user_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "clinic_id": string,"created_at"?: string,"id"?: string,"name": string,"name_ja"?: string | null,"specialty"?: string | null,"user_id"?: string | null
+                    "bio"?: string | null,"bio_ja"?: string | null,"clinic_id": string,"created_at"?: string,"id"?: string,"languages"?: (string)[],"name": string,"name_ja"?: string | null,"photo_path"?: string | null,"specialties"?: (string)[],"specialty"?: string | null,"title"?: string | null,"title_ja"?: string | null,"user_id"?: string | null
                   }
                   Update: {
-                    "clinic_id"?: string,"created_at"?: string,"id"?: string,"name"?: string,"name_ja"?: string | null,"specialty"?: string | null,"user_id"?: string | null
+                    "bio"?: string | null,"bio_ja"?: string | null,"clinic_id"?: string,"created_at"?: string,"id"?: string,"languages"?: (string)[],"name"?: string,"name_ja"?: string | null,"photo_path"?: string | null,"specialties"?: (string)[],"specialty"?: string | null,"title"?: string | null,"title_ja"?: string | null,"user_id"?: string | null
                   }
                   Relationships: [
                     {

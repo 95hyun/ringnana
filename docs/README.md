@@ -7,6 +7,7 @@
 | [scope.md](scope.md) | 해커톤 데모 범위·우선순위 | 작업을 고를 때 |
 | [demo-scenario.md](demo-scenario.md) | 3분 데모 동선 | 화면을 만들거나 리허설할 때 |
 | [architecture.md](architecture.md) | 스택·폴더·라우트·데이터 모델 | 코드를 쓰기 전에 |
+| [i18n.md](i18n.md) | `/[lang]/...` 경로·사전 규칙 | 화면·링크를 만들 때 |
 | [video-integration.md](video-integration.md) | 플랫폼 ↔ 화상통화 계약 | 화상 진료 연결부를 만들 때 |
 | [conventions.md](conventions.md) | 코드·git·협업 규칙 | 커밋 전에 |
 | [HEAD.md](HEAD.md) | 병렬 Claude 세션(head)용 브리프·레인 분담 | 새 세션에 작업을 나눠 줄 때 |

@@ -1,2 +1,34 @@
 // 환자 화면 문구 (일본어판). 각 작업이 자기 파일만 채운다.
-export const capture = {} as const;
+export const capture = {
+  title: "顔写真の撮影",
+  consentLead: "医師が顔写真の撮影をお願いしています",
+  consentText: "顔写真を診療目的で収集・利用することに同意します。写真は担当の医師のみが確認します。",
+  start: "撮影を始める",
+  testStart: "撮影テスト",
+  preparing: "準備しています…",
+  steps: { front: "正面", left: "左", right: "右" },
+  instruction: {
+    front: "正面を向いてください",
+    left: "顔を左に向けてください",
+    right: "顔を右に向けてください",
+  },
+  hint: {
+    noFace: "顔を枠の中に合わせてください",
+    multipleFaces: "お一人だけ映るようにしてください",
+    tooSmall: "もう少し近づいてください",
+    tooLarge: "少し離れてください",
+    offCenter: "顔を中央に合わせてください",
+    angleOver: "少しだけ戻してください",
+    dark: "もう少し明るい場所に移動してください",
+  },
+  manual: "手動で撮影",
+  previewTitle: "撮影した写真を確認してください",
+  retake: "撮り直す",
+  submit: "提出する",
+  submitting: "送信中…",
+  submitFailed: "送信に失敗しました。インターネット接続を確認してください",
+  resubmit: "もう一度提出",
+  submitted: "医師が写真を確認しています",
+  close: "閉じる",
+  noCamera: "カメラの映像がありません",
+} as const;

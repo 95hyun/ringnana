@@ -30,14 +30,27 @@ export function isSuperseded(self: PresenceState, state: RawPresence): boolean {
   return validTabs(state, [self])[self.role]?.tabId !== self.tabId;
 }
 
+export type KnownTabs = Record<Role, string[]>;
+
+// 역할별로 Presence 에 보이는 모든 tabId (밀려난 창 포함)
+export function knownTabs(state: RawPresence): KnownTabs {
+  const out: KnownTabs = { doctor: [], patient: [] };
+  for (const p of Object.values(state).flatMap((list) => list.map(asPresence))) if (p) out[p.role].push(p.tabId);
+  return out;
+}
+
 export type SignalDecision = "accept" | "ignore" | "hold";
 
-// 상대의 유효한 창이 아닌 tabId 는 무시. 상대 역할이 아직 Presence 에 없으면 보류했다가 다시 판단한다.
-export function acceptSignal(sig: { from: Role; tabId: string }, selfRole: Role, valid: ValidTabs): SignalDecision {
+// Presence 에 있지만 최신이 아닌 창은 무시. Presence 에 아직 없는 창(새 창이 먼저 보낸 신호)은 보류했다가 다시 판단한다.
+export function acceptSignal(
+  sig: { from: Role; tabId: string },
+  selfRole: Role,
+  valid: ValidTabs,
+  known: KnownTabs,
+): SignalDecision {
   if (sig.from === selfRole) return "ignore";
-  const v = valid[sig.from];
-  if (!v) return "hold";
-  return v.tabId === sig.tabId ? "accept" : "ignore";
+  if (valid[sig.from]?.tabId === sig.tabId) return "accept";
+  return known[sig.from].includes(sig.tabId) ? "ignore" : "hold";
 }
 
 // 의사의 연결 상대 식별 — 환자가 같은 탭에서 다시 들어와도(joinedAt 변경) 새로 제안한다

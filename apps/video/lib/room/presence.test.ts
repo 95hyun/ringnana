@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { acceptSignal, isSuperseded, validTabs } from "./presence";
+import { acceptSignal, isSuperseded, knownTabs, validTabs } from "./presence";
 import type { PresenceState } from "@/lib/contracts";
 
 const d1: PresenceState = { role: "doctor", tabId: "d1", joinedAt: 100 };
@@ -39,17 +39,37 @@ describe("isSuperseded", () => {
 });
 
 describe("acceptSignal — 상대의 유효한 창 신호만 받는다", () => {
-  const valid = validTabs({ doctor: [d1, d2], patient: [p1] });
+  const state = { doctor: [d1, d2], patient: [p1] };
+  const valid = validTabs(state);
+  const known = knownTabs(state);
   it("유효한 상대 창이면 accept", () => {
-    expect(acceptSignal({ from: "doctor", tabId: "d2" }, "patient", valid)).toBe("accept");
+    expect(acceptSignal({ from: "doctor", tabId: "d2" }, "patient", valid, known)).toBe("accept");
   });
-  it("밀려난 창이면 ignore", () => {
-    expect(acceptSignal({ from: "doctor", tabId: "d1" }, "patient", valid)).toBe("ignore");
+  it("Presence 에 있지만 밀려난 창이면 ignore", () => {
+    expect(acceptSignal({ from: "doctor", tabId: "d1" }, "patient", valid, known)).toBe("ignore");
   });
   it("내 역할에서 온 신호는 ignore", () => {
-    expect(acceptSignal({ from: "patient", tabId: "p1" }, "patient", valid)).toBe("ignore");
+    expect(acceptSignal({ from: "patient", tabId: "p1" }, "patient", valid, known)).toBe("ignore");
   });
   it("아직 Presence 에 없는 역할이면 hold (Presence 반영 뒤 다시 판단)", () => {
-    expect(acceptSignal({ from: "doctor", tabId: "d9" }, "patient", { doctor: null, patient: p1 })).toBe("hold");
+    const s = { patient: [p1] };
+    expect(acceptSignal({ from: "doctor", tabId: "d9" }, "patient", validTabs(s), knownTabs(s))).toBe("hold");
+  });
+  it("유효한 창이 있어도 Presence 에 아직 없는 tabId 면 hold", () => {
+    const s = { doctor: [d1], patient: [p1] };
+    expect(acceptSignal({ from: "doctor", tabId: "d2" }, "patient", validTabs(s), knownTabs(s))).toBe("hold");
+  });
+  it("보류했던 새 창 신호는 그 창이 최신으로 반영되면 accept", () => {
+    const before = { doctor: [d1], patient: [p1] };
+    const sig = { from: "doctor" as const, tabId: "d2" };
+    expect(acceptSignal(sig, "patient", validTabs(before), knownTabs(before))).toBe("hold");
+    const after = { doctor: [d1, d2], patient: [p1] };
+    expect(acceptSignal(sig, "patient", validTabs(after), knownTabs(after))).toBe("accept");
+  });
+});
+
+describe("knownTabs", () => {
+  it("역할별로 Presence 에 있는 모든 tabId", () => {
+    expect(knownTabs({ doctor: [d1, d2], patient: [p1], x: [{ foo: 1 }] })).toEqual({ doctor: ["d1", "d2"], patient: ["p1"] });
   });
 });

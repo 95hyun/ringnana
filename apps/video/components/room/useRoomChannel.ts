@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { channelName, type PresenceState, type RoomEvent, type RoomEventType } from "@/lib/contracts";
 import { supabaseBrowser } from "@/lib/supabase/browser";
-import { isSuperseded, validTabs } from "@/lib/room/presence";
+import { isSuperseded, knownTabs, validTabs } from "@/lib/room/presence";
 
 const EVENT_TYPES: RoomEventType[] = [
   "signal",
@@ -120,12 +120,13 @@ export function useRoomChannel({ sessionId, self }: { sessionId: string; self: P
   }, []);
 
   const valid = useMemo(() => validTabs(presence), [presence]);
+  const known = useMemo(() => knownTabs(presence), [presence]);
   const superseded = useMemo(
     () => isSuperseded({ role, tabId, joinedAt }, presence),
     [presence, role, tabId, joinedAt],
   );
 
-  return { valid, superseded, error, send, sendAndWait, on };
+  return { valid, known, superseded, error, send, sendAndWait, on };
 }
 
 export type RoomChannel = ReturnType<typeof useRoomChannel>;

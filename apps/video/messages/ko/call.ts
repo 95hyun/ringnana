@@ -1,5 +1,5 @@
 import type { Messages } from "../types";
-import type { call as ja } from "../ja/call";
+import type { call as ja, callAlert as jaAlert } from "../ja/call";
 
 // 환자 화면 문구 (한국어판) — ja와 같은 키
 export const call: Messages<typeof ja> = {
@@ -18,4 +18,8 @@ export const call: Messages<typeof ja> = {
   callEnded: "통화가 종료되었습니다",
   remoteLabel: "의사",
   selfLabel: "나",
+};
+
+export const callAlert: Messages<typeof jaAlert> = {
+  realtimeError: "실시간 연결에 실패했습니다. 페이지를 새로고침해 주세요",
 };

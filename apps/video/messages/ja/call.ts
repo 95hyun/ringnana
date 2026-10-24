@@ -16,3 +16,8 @@ export const call = {
   remoteLabel: "医師",
   selfLabel: "あなた",
 } as const;
+
+// 실시간 채널 오류 안내 — call 에 넣으면 의사 문구(lib/room/text.ts)도 같은 키가 필요해져 따로 둔다
+export const callAlert = {
+  realtimeError: "リアルタイム接続に失敗しました。ページを再読み込みしてください",
+} as const;

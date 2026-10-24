@@ -1,0 +1,23 @@
+// 공통 틀·버튼 문구 (H1 소유). 키를 추가하면 ko/common.ts에도 같은 키를 넣는다
+const common = {
+  brand: "Ringnana",
+  patientTagline: "韓国皮膚科オンライン診療",
+  clinicConsole: "의원 콘솔",
+  nav: {
+    queue: "진료 큐",
+    aftercare: "사후관리",
+  },
+  actions: {
+    next: "次へ",
+    back: "戻る",
+    submit: "送信",
+    save: "保存",
+    cancel: "キャンセル",
+  },
+  states: {
+    loading: "読み込み中…",
+    error: "エラーが発生しました。もう一度お試しください。",
+  },
+};
+
+export default common;

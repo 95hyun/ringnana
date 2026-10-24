@@ -10,7 +10,9 @@ export type FlowStep = (typeof FLOW_STEPS)[number];
 // 경로 → 헤더 3단계 (Figma 헤더: 1 문진 · 2 의사 검토 · 3 소견서). 해당 없는 화면은 강조 없이 표시
 function stepOf(pathname: string): FlowStep | null {
   const rest = "/" + pathname.split("/").slice(2).join("/");
-  if (/^\/(intake|photos)(\/|$)/.test(rest)) return "intake";
+  // flow-v2: 문진은 예약에 귀속(/consult/{id}/intake). 예약 확정 전 화면(requested)도 문진 단계로 본다
+  if (/^\/(intake|photos)(\/|$)/.test(rest) || /^\/consult\/[^/]+\/(intake|requested)(\/|$)/.test(rest)) return "intake";
+  if (/^\/consult\/[^/]+\/done(\/|$)/.test(rest)) return "note"; // 진료 완료 → 소견서 단계
   if (/^\/(consult|clinic\/consult)(\/|$)/.test(rest)) return "review";
   if (/^\/(quote|aftercare|clinic\/aftercare)(\/|$)/.test(rest)) return "note";
   return null;

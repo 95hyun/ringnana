@@ -14,6 +14,14 @@ const common = {
     save: "保存",
     cancel: "キャンセル",
   },
+  treatments: {
+    pico_toning: "ピコトーニング",
+    laser_toning: "レーザートーニング",
+    fraxel: "フラクショナルレーザー",
+    rejuran: "リジュラン",
+    aqua_peel: "アクアピール",
+    botox_jaw: "ボトックス（エラ）",
+  },
   states: {
     loading: "読み込み中…",
     error: "エラーが発生しました。もう一度お試しください。",

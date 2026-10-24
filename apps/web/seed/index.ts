@@ -122,6 +122,8 @@ async function main() {
       id: DEMO_PATIENT_ID,
       user_id: demoUser.id,
       name: "佐藤 美咲",
+      name_latin: "Sato Misaki",
+      consented_at: hoursFromNow(-24 * 32),
       country: "JP",
       lang: "ja",
       birth_year: 1997,
@@ -131,13 +133,23 @@ async function main() {
 
   // 진료 큐를 채울 다른 가상 환자들
   const queue = [
-    { name: "田中 優子", birth_year: 1991, concerns: ["acne_scar"], flags: [], status: "scheduled", trip: [10, 13] },
-    { name: "鈴木 花", birth_year: 2000, concerns: ["pores", "redness"], flags: [], status: "requested", trip: [21, 25] },
-    { name: "高橋 恵美", birth_year: 1988, concerns: ["melasma", "wrinkles"], flags: ["anticoagulant"], status: "requested", trip: [30, 33] },
+    { name: "田中 優子", name_latin: "Tanaka Yuko", birth_year: 1991, concerns: ["acne_scar"], flags: [], status: "scheduled", trip: [10, 13] },
+    { name: "鈴木 花", name_latin: "Suzuki Hana", birth_year: 2000, concerns: ["pores", "redness"], flags: [], status: "requested", trip: [21, 25] },
+    { name: "高橋 恵美", name_latin: "Takahashi Emi", birth_year: 1988, concerns: ["melasma", "wrinkles"], flags: ["anticoagulant"], status: "requested", trip: [30, 33] },
   ] as const;
   for (const q of queue) {
     const [p] = await must(
-      db.from("patients").insert({ name: q.name, country: "JP", lang: "ja", birth_year: q.birth_year }).select("id"),
+      db
+        .from("patients")
+        .insert({
+          name: q.name,
+          name_latin: q.name_latin,
+          consented_at: hoursFromNow(-24),
+          country: "JP",
+          lang: "ja",
+          birth_year: q.birth_year,
+        })
+        .select("id"),
       `patient ${q.name}`,
     );
     const [intake] = await must(
@@ -207,7 +219,7 @@ async function main() {
       .from("quotes")
       .insert({
         consultation_id: pastConsult.id,
-        items: [{ name: "피코토닝", name_ja: "ピコトーニング", sessions: 2, price_krw: 150000 }],
+        items: [{ code: "pico_toning", name: "피코토닝", name_ja: "ピコトーニング", sessions: 2, price_krw: 150000, visit_days: [1, 3] }],
         total_krw: 300000,
         valid_until: day(-10),
         status: "accepted",

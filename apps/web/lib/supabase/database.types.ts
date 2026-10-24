@@ -163,14 +163,14 @@ isOneToOne: false
                   ]
                 },"patients": {
                   Row: {
-                    "birth_year": number | null,"country": string,"created_at": string,"id": string,"lang": string,"name": string,"user_id": string | null
+                    "birth_year": number | null,"consented_at": string | null,"country": string,"created_at": string,"id": string,"lang": string,"name": string,"name_latin": string | null,"user_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "birth_year"?: number | null,"country"?: string,"created_at"?: string,"id"?: string,"lang"?: string,"name": string,"user_id"?: string | null
+                    "birth_year"?: number | null,"consented_at"?: string | null,"country"?: string,"created_at"?: string,"id"?: string,"lang"?: string,"name": string,"name_latin"?: string | null,"user_id"?: string | null
                   }
                   Update: {
-                    "birth_year"?: number | null,"country"?: string,"created_at"?: string,"id"?: string,"lang"?: string,"name"?: string,"user_id"?: string | null
+                    "birth_year"?: number | null,"consented_at"?: string | null,"country"?: string,"created_at"?: string,"id"?: string,"lang"?: string,"name"?: string,"name_latin"?: string | null,"user_id"?: string | null
                   }
                   Relationships: [
                     

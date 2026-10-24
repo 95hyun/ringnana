@@ -64,6 +64,11 @@ apps/web/
 - RLS는 전 테이블 켜져 있고 정책이 없다 = anon 키로는 아무것도 못 읽고 못 쓴다. `SUPABASE_SERVICE_ROLE_KEY`는 `server-only`로 클라이언트 번들 유입을 막는다. `NEXT_PUBLIC_`를 붙이지 않는다.
 - 고정 ID = `lib/demo.ts`: `DEMO_PATIENT_ID`(佐藤 美咲), `DEMO_DOCTOR_ID`, `DEMO_CLINIC_ID`, `DEMO_AFTERCARE_BOOKING_ID`.
 
+## DB 데이터 현지화 (`lib/localize.ts`)
+- `localized(row, lang, field = "name")`: 다국어 컬럼 규칙 = 기본 컬럼(`name`) 한국어, `name_ja` 일본어. 화면에서 `name_ja ?? name`을 직접 쓰지 않는다.
+- 시술: `treatmentName(item, lang, dict)` — `code`가 있으면 `dictionaries/*/common.ts`의 `treatments`, 없으면 `localized(item)`. 코드 추가 = TREATMENT_CODES + 양쪽 사전.
+- 의원 콘솔 환자 이름: `patientName(p)` → `Takahashi Emi (高橋 恵美)` (name_latin 없으면 name).
+
 ## 인증 (환자만)
 - 가입: 서버에서 `auth.admin.createUser({ email, password, email_confirm: true })` → `patients.user_id` 연결. 이메일 확인 설정은 바꾸지 않는다.
 - 로그인: 비밀번호를 Supabase Auth로 검증한 뒤, Supabase 토큰 대신 `patientId`를 HMAC 서명한 httpOnly 쿠키 `rn_patient`(7일)를 세운다 — 데모 도중 토큰 만료가 없다. 서명 키 = `SESSION_SECRET`(service role 키와 분리).
@@ -82,11 +87,11 @@ apps/web/
 |---|---|---|
 | `clinics` | id, name, name_ja, address | 제휴 유치의료기관 |
 | `doctors` | id, clinic_id, user_id?, name, name_ja, specialty | 피부과 전문의 |
-| `patients` | id, user_id?, name, country, lang, birth_year | 데모는 country=JP |
+| `patients` | id, user_id?, name, name_latin?, consented_at?, country, lang, birth_year | 데모는 country=JP. name_latin = 로마자(의원 콘솔 표기), consented_at = 가입 필수 동의 3종 시각 |
 | `intakes` | id, patient_id, concerns text[], contraindications jsonb, flags text[], trip_start, trip_end | 금기 플래그는 `lib/intake.ts`가 계산 |
-| `photos` | id, patient_id, intake_id?, angle, storage_path, quality_ok, consultation_id?, source, capture_batch_id?, capture_mode?, yaw?, pitch? | angle: `front`·`left`·`right`·`followup`(체크인 사진). source: `intake`(기본, 사전·셀카) / `call`(통화 중 촬영, video 앱 서버가 저장 — consultation_id·capture_batch_id 필수). capture_mode: `auto`/`manual`. (capture_batch_id, angle) unique → 재전송은 upsert로 덮어씀 ([video-integration.md](video-integration.md) §4) |
+| `photos` | id, patient_id, intake_id?, angle, storage_path, quality_ok, consultation_id?, source, capture_batch_id?, capture_mode?, yaw?, pitch? | angle: `front`·`left`·`right`·`followup`(체크인 사진)·`preview`(AI 시술 기대 이미지, H2). source: `intake`(기본, 사전·셀카) / `call`(통화 중 촬영, video 앱 서버가 저장 — consultation_id·capture_batch_id 필수). capture_mode: `auto`/`manual`. (capture_batch_id, angle) unique → 재전송은 upsert로 덮어씀 ([video-integration.md](video-integration.md) §4) |
 | `consultations` | id, patient_id, doctor_id, intake_id, status, scheduled_at, video_session_id, notes | status: `requested → scheduled → in_call → done`. `video_session_id` = 기본값 랜덤 UUID(화상 방 키) |
-| `quotes` | id, consultation_id, items jsonb, total_krw, valid_until, status | items: `[{ name, name_ja, sessions, price_krw, visit_days? }]` — price_krw = 1회 단가, visit_days = 체류 N일차(1부터) 배열(H3). status: `draft → confirmed → accepted`. confirmed 이후 변경 불가(앱에서 지킴) |
+| `quotes` | id, consultation_id, items jsonb, total_krw, valid_until, status | items: `[{ code?, name, name_ja, sessions, price_krw, visit_days? }]` — code = 시술 코드(`lib/localize.ts` TREATMENT_CODES, 자유 입력 항목은 없음) — price_krw = 1회 단가, visit_days = 체류 N일차(1부터) 배열(H3). status: `draft → confirmed → accepted`. confirmed 이후 변경 불가(앱에서 지킴) |
 | `bookings` | id, quote_id, clinic_id, visit_dates date[], status | status: `reserved → done` |
 | `followups` | id, booking_id, due_day(3/14/30), status, photo_id, patient_note, doctor_note, alert, symptoms text[] | status: `pending → submitted → reviewed`. symptoms = 증상 자가 체크 고정 키(H4), 하나라도 있으면 alert=true. (booking_id, due_day) unique |
 

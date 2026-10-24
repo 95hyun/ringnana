@@ -15,6 +15,14 @@ const common = {
     save: "저장",
     cancel: "취소",
   },
+  treatments: {
+    pico_toning: "피코토닝",
+    laser_toning: "레이저토닝",
+    fraxel: "프락셀",
+    rejuran: "리쥬란 힐러",
+    aqua_peel: "아쿠아필",
+    botox_jaw: "보톡스(사각턱)",
+  },
   states: {
     loading: "불러오는 중…",
     error: "오류가 발생했습니다. 다시 시도해 주세요.",

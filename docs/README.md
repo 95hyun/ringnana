@@ -6,6 +6,7 @@
 | [product/research.md](product/research.md) | 시장·법 조사 노트와 출처 | 근거를 확인하거나 피치를 준비할 때 |
 | [scope.md](scope.md) | 해커톤 데모 범위·우선순위 | 작업을 고를 때 |
 | [demo-scenario.md](demo-scenario.md) | 3분 데모 동선 | 화면을 만들거나 리허설할 때 |
+| [design.md](design.md) | 스타일 가이드(색·글꼴·컴포넌트) + 적용 규칙 | 화면을 만들거나 고칠 때 |
 | [architecture.md](architecture.md) | 스택·폴더·라우트·데이터 모델 | 코드를 쓰기 전에 |
 | [i18n.md](i18n.md) | `/[lang]/...` 경로·사전 규칙 | 화면·링크를 만들 때 |
 | [video-integration.md](video-integration.md) | 플랫폼 ↔ 화상통화 계약 | 화상 진료 연결부를 만들 때 |

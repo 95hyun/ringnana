@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEMO_CLINIC_ID } from "@/lib/demo";
 import { href } from "@/lib/i18n";
+import { patientName, treatmentName } from "@/lib/localize";
 import { supabaseServer } from "@/lib/supabase/server";
 import { signedPhotoUrls } from "@/lib/supabase/storage";
-import { decodeNote, dueDate } from "@/app/[lang]/(patient)/aftercare/_components/checkin";
+import { dueDate, parseSymptoms } from "@/app/[lang]/(patient)/aftercare/_components/checkin";
 import { fill, formatShortDate, parseItems } from "@/app/[lang]/(patient)/quote/_components/format";
 import { h4Context } from "@/app/[lang]/(patient)/quote/_components/i18n";
 import { ReviewForm } from "../_components/review-form";
@@ -31,14 +32,14 @@ async function CheckinDetail({ params }: { params: Promise<{ followupId: string 
   await connection();
   const { followupId } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(followupId)) notFound();
-  const { t } = await h4Context();
+  const { lang, t, common } = await h4Context();
   const c = t.clinic;
 
   const db = supabaseServer();
   const { data: f } = await db
     .from("followups")
     .select(
-      "id, due_day, status, alert, patient_note, doctor_note, photos(storage_path), bookings!inner(clinic_id, visit_dates, quotes!inner(items, consultations!inner(patient_id, intake_id, notes, patients!inner(name, birth_year))))",
+      "id, due_day, status, alert, patient_note, symptoms, doctor_note, photos(storage_path), bookings!inner(clinic_id, visit_dates, quotes!inner(items, consultations!inner(patient_id, intake_id, notes, patients!inner(name, name_latin, birth_year))))",
     )
     .eq("id", followupId)
     .maybeSingle();
@@ -66,11 +67,12 @@ async function CheckinDetail({ params }: { params: Promise<{ followupId: string 
 
   const visits = [...f.bookings.visit_dates].sort();
   const due = dueDate(visits, f.due_day);
-  const { symptoms, memo } = decodeNote(f.patient_note);
+  const symptoms = parseSymptoms(f.symptoms);
+  const memo = f.patient_note ?? "";
   const items = parseItems(f.bookings.quotes.items);
   const summary = [
     items
-      .map((i) => `${i.name ?? i.name_ja ?? c.treatmentFallback}${i.sessions ? fill(c.sessions, { n: i.sessions }) : ""}`)
+      .map((i) => `${treatmentName(i, lang, { common }) ?? c.treatmentFallback}${i.sessions ? fill(c.sessions, { n: i.sessions }) : ""}`)
       .join(", "),
     fill(c.visitDates, { dates: visits.map(formatShortDate).join(", ") }),
     due && fill(c.dueOn, { date: formatShortDate(due) }),
@@ -80,7 +82,7 @@ async function CheckinDetail({ params }: { params: Promise<{ followupId: string 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline gap-3">
-        <h1 className="text-xl font-bold">{fill(c.detailTitle, { name: consult.patients.name, n: f.due_day })}</h1>
+        <h1 className="text-xl font-bold">{fill(c.detailTitle, { name: patientName(consult.patients), n: f.due_day })}</h1>
         {f.alert && <Badge variant="destructive">{c.alertSelf}</Badge>}
         <Badge variant={f.status === "reviewed" ? "outline" : "secondary"}>
           {f.status === "reviewed" ? c.status.reviewed : c.status.submitted}

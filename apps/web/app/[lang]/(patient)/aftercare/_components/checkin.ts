@@ -8,24 +8,9 @@ export type SymptomKey = (typeof SYMPTOM_KEYS)[number];
 
 const KEY_SET = new Set<string>(SYMPTOM_KEYS);
 
-// TODO(H1 요청): followups.symptoms 컬럼이 생기면 이 인코딩을 걷어낸다. 지금은 patient_note 첫 줄에 넣는다
-const PREFIX = "[symptoms:";
-
-export function encodeNote(symptoms: string[], memo: string): string | null {
-  const keys = symptoms.filter((s) => KEY_SET.has(s));
-  const body = memo.trim();
-  // 메모가 우연히 접두어로 시작해도 증상으로 읽히지 않게 빈 목록을 명시한다
-  if (keys.length === 0) return body.startsWith(PREFIX) ? `${PREFIX}]\n${body}` : body || null;
-  return `${PREFIX}${keys.join(",")}]${body ? `\n${body}` : ""}`;
-}
-
-export function decodeNote(note: string | null): { symptoms: SymptomKey[]; memo: string } {
-  if (!note) return { symptoms: [], memo: "" };
-  if (!note.startsWith(PREFIX)) return { symptoms: [], memo: note };
-  const end = note.indexOf("]");
-  if (end < 0) return { symptoms: [], memo: note };
-  const keys = note.slice(PREFIX.length, end).split(",").filter((s): s is SymptomKey => KEY_SET.has(s));
-  return { symptoms: keys, memo: note.slice(end + 1).trim() };
+// followups.symptoms(text[])에서 아는 키만 남긴다
+export function parseSymptoms(values: string[] | null | undefined): SymptomKey[] {
+  return (values ?? []).filter((s): s is SymptomKey => KEY_SET.has(s));
 }
 
 // D+n 예정일 = 마지막 시술일 + n

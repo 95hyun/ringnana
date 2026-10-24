@@ -10,7 +10,7 @@ import { signedPhotoUrl } from "@/lib/supabase/storage";
 import { viewerPatientId } from "../../quote/_components/viewer";
 import { fill, formatDate } from "../../quote/_components/format";
 import { h4Context } from "../../quote/_components/i18n";
-import { decodeNote, dueDate } from "../_components/checkin";
+import { dueDate, parseSymptoms } from "../_components/checkin";
 import { CheckinForm } from "../_components/checkin-form";
 
 export default async function CheckinPage({ params }: PageProps<"/[lang]/aftercare/[followupId]">) {
@@ -37,7 +37,7 @@ async function CheckinContent({ params }: { params: Promise<{ followupId: string
   const { data: f } = await db
     .from("followups")
     .select(
-      "id, due_day, status, patient_note, doctor_note, alert, photos(storage_path), bookings!inner(visit_dates, quotes!inner(consultations!inner(patient_id)))",
+      "id, due_day, status, patient_note, symptoms, doctor_note, alert, photos(storage_path), bookings!inner(visit_dates, quotes!inner(consultations!inner(patient_id)))",
     )
     .eq("id", followupId)
     .maybeSingle();
@@ -60,7 +60,8 @@ async function CheckinContent({ params }: { params: Promise<{ followupId: string
     );
   }
 
-  const { symptoms, memo } = decodeNote(f.patient_note);
+  const symptoms = parseSymptoms(f.symptoms);
+  const memo = f.patient_note ?? "";
   const photoUrl = f.photos?.storage_path ? await signedPhotoUrl(f.photos.storage_path).catch(() => null) : null;
 
   return (

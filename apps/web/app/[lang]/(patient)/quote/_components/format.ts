@@ -3,8 +3,8 @@
 // 참고 환율 고정값 — 확정가는 KRW, 엔화는 참고 표기만 (해커톤: 환율 API 없음)
 export const KRW_TO_JPY = 0.11;
 
-// visit_days = 의사가 제안한 체류 N일차(1부터) — H3가 쓴다 (docs/requests.md)
-export type QuoteItem = { name?: string; name_ja?: string; sessions?: number; price_krw?: number; visit_days?: number[] };
+// code = 시술 코드(lib/localize.ts), visit_days = 의사가 제안한 체류 N일차(1부터) — H3가 쓴다
+export type QuoteItem = { code?: string; name?: string; name_ja?: string; sessions?: number; price_krw?: number; visit_days?: number[] };
 
 // quotes.items(jsonb)는 H3가 쓴다 — 필드가 빠져도 화면이 깨지지 않게 관대하게 읽는다
 export function parseItems(items: unknown): QuoteItem[] {

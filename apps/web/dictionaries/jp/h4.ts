@@ -45,6 +45,11 @@ const h4 = {
     visits: "来院日: {dates}",
     dayN: "施術後{n}日目",
     around: "{date}頃",
+    actionTitle: "施術後{n}日目のチェックイン",
+    dueToday: "本日が期限です",
+    overdue: "期限を過ぎています（{date}）",
+    actionHint: "写真と症状を送ると、担当医が経過を確認します。",
+    sendPhoto: "写真を送る",
     status: { pending: "未提出", submitted: "医師の確認待ち", reviewed: "医師確認済み" },
   },
   checkin: {

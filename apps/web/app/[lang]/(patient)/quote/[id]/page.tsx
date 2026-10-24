@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { href } from "@/lib/i18n";
+import { localized, treatmentName } from "@/lib/localize";
 import { supabaseServer } from "@/lib/supabase/server";
 import { viewerPatientId } from "../_components/viewer";
 import {
@@ -39,12 +40,12 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
   await connection();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const { lang, locale, t } = await h4Context();
+  const { lang, locale, t, common } = await h4Context();
 
   const db = supabaseServer();
   const { data: consult } = await db
     .from("consultations")
-    .select("id, patient_id, intake_id, doctors(name_ja, name, clinics(name_ja))")
+    .select("id, patient_id, intake_id, doctors(name_ja, name, clinics(name, name_ja))")
     .eq("id", id)
     .maybeSingle();
   // 본인 진료만 보여준다
@@ -87,15 +88,15 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>{doctor?.clinics?.name_ja ?? t.quote.clinicFallback}</CardTitle>
-          <CardDescription>{fill(t.quote.doctor, { name: doctor?.name_ja ?? doctor?.name ?? "—" })}</CardDescription>
+          <CardTitle>{localized(doctor?.clinics, lang) ?? t.quote.clinicFallback}</CardTitle>
+          <CardDescription>{fill(t.quote.doctor, { name: localized(doctor, lang) ?? "—" })}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <ul className="flex flex-col gap-2">
             {items.map((item, i) => (
               <li key={i} className="flex items-baseline justify-between gap-2 text-sm">
                 <span>
-                  {item.name_ja ?? item.name ?? t.quote.treatmentFallback}
+                  {treatmentName(item, lang, { common }) ?? t.quote.treatmentFallback}
                   {item.sessions ? (
                     <span className="ml-1 text-muted-foreground">{fill(t.quote.sessions, { n: item.sessions })}</span>
                   ) : null}

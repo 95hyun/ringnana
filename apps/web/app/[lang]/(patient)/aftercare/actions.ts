@@ -5,7 +5,7 @@ import type { H4Dict } from "../quote/_components/i18n";
 import { supabaseServer } from "@/lib/supabase/server";
 import { viewerPatientId } from "../quote/_components/viewer";
 import { uploadPhoto } from "@/lib/supabase/storage";
-import { decodeNote, encodeNote } from "./_components/checkin";
+import { parseSymptoms } from "./_components/checkin";
 
 // Server Action은 경로 언어를 모른다 → 오류는 사전 키로 돌려준다
 export type CheckinResult = { ok: true } | { ok: false; error: keyof H4Dict["errors"] };
@@ -14,7 +14,7 @@ export async function submitCheckin(fd: FormData): Promise<CheckinResult> {
   const followupId = fd.get("followupId");
   const photo = fd.get("photo");
   const memo = String(fd.get("memo") ?? "").slice(0, 1000);
-  const symptoms = fd.getAll("symptoms").map(String);
+  const symptoms = parseSymptoms(fd.getAll("symptoms").map(String));
   if (typeof followupId !== "string") return { ok: false, error: "checkinNotFound" };
   if (!(photo instanceof Blob) || photo.size === 0) return { ok: false, error: "needPhoto" };
   if (!["image/jpeg", "image/png", "image/webp"].includes(photo.type)) return { ok: false, error: "badType" };
@@ -44,11 +44,10 @@ export async function submitCheckin(fd: FormData): Promise<CheckinResult> {
     .single();
   if (photoError || !row) return { ok: false, error: "sendFailed" };
 
-  const note = encodeNote(symptoms, memo);
   // alert = 환자 자가 보고 여부일 뿐 의료 판단이 아니다 — 의사가 검토한다
   const { data: updated } = await db
     .from("followups")
-    .update({ status: "submitted", photo_id: row.id, patient_note: note, alert: decodeNote(note).symptoms.length > 0 })
+    .update({ status: "submitted", photo_id: row.id, patient_note: memo.trim() || null, symptoms, alert: symptoms.length > 0 })
     .eq("id", followupId)
     .eq("status", "pending")
     .select("id");

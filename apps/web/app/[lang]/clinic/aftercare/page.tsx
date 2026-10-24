@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DEMO_CLINIC_ID } from "@/lib/demo";
 import { href } from "@/lib/i18n";
+import { patientName, treatmentName } from "@/lib/localize";
 import { supabaseServer } from "@/lib/supabase/server";
-import { decodeNote, dueDate } from "@/app/[lang]/(patient)/aftercare/_components/checkin";
+import { dueDate, parseSymptoms } from "@/app/[lang]/(patient)/aftercare/_components/checkin";
 import { formatShortDate, parseItems } from "@/app/[lang]/(patient)/quote/_components/format";
 import { h4Context } from "@/app/[lang]/(patient)/quote/_components/i18n";
 
@@ -27,12 +28,12 @@ export default async function ClinicAftercarePage() {
 
 async function CheckinTable() {
   await connection();
-  const { lang, t } = await h4Context();
+  const { lang, t, common } = await h4Context();
   const c = t.clinic;
   const { data } = await supabaseServer()
     .from("followups")
     .select(
-      "id, due_day, status, alert, patient_note, bookings!inner(clinic_id, visit_dates, quotes!inner(items, consultations!inner(patients!inner(name))))",
+      "id, due_day, status, alert, symptoms, bookings!inner(clinic_id, visit_dates, quotes!inner(items, consultations!inner(patients!inner(name, name_latin))))",
     )
     .eq("bookings.clinic_id", DEMO_CLINIC_ID)
     .in("status", ["submitted", "reviewed"]);
@@ -57,7 +58,7 @@ async function CheckinTable() {
       <TableBody>
         {rows.map((f) => {
           const due = dueDate(f.bookings.visit_dates, f.due_day);
-          const { symptoms } = decodeNote(f.patient_note);
+          const symptoms = parseSymptoms(f.symptoms);
           const items = parseItems(f.bookings.quotes.items);
           const highlight = f.alert && f.status === "submitted";
           const detail = href(lang, `/clinic/aftercare/${f.id}`);
@@ -65,10 +66,10 @@ async function CheckinTable() {
             <TableRow key={f.id} className={highlight ? "bg-destructive/5" : undefined}>
               <TableCell className="font-medium">
                 <Link href={detail} className="hover:underline">
-                  {f.bookings.quotes.consultations.patients.name}
+                  {patientName(f.bookings.quotes.consultations.patients)}
                 </Link>
               </TableCell>
-              <TableCell>{items.map((i) => i.name ?? i.name_ja).filter(Boolean).join(", ") || "—"}</TableCell>
+              <TableCell>{items.map((i) => treatmentName(i, lang, { common })).filter(Boolean).join(", ") || "—"}</TableCell>
               <TableCell>
                 D+{f.due_day}
                 {due && <span className="ml-1 text-muted-foreground">({formatShortDate(due)})</span>}

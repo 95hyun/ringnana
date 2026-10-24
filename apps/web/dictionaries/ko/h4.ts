@@ -45,6 +45,11 @@ const h4 = {
     visits: "내원일: {dates}",
     dayN: "시술 후 {n}일째",
     around: "{date}경",
+    actionTitle: "시술 후 {n}일째 체크인",
+    dueToday: "오늘이 기한입니다",
+    overdue: "기한이 지났습니다 ({date})",
+    actionHint: "사진과 증상을 보내면 담당의가 경과를 확인합니다.",
+    sendPhoto: "사진 보내기",
     status: { pending: "미제출", submitted: "의사 확인 대기", reviewed: "의사 확인 완료" },
   },
   checkin: {

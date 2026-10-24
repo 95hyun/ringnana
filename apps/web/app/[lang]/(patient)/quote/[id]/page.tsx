@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PatientStepper } from "@/components/shell/patient-stepper";
+import { DisclaimerBar } from "@/components/ui/disclaimer-bar";
 import { Separator } from "@/components/ui/separator";
 import { href } from "@/lib/i18n";
 import { localized, treatmentName } from "@/lib/localize";
@@ -90,7 +91,8 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
       {consult.notes?.trim() && (
         <Card>
           <CardHeader>
-            <CardTitle>{t.quote.doctorNotes}</CardTitle>
+            {/* 의사 판단이 주인공 (design.md 원칙 2) */}
+            <CardTitle className="text-lg font-bold">{t.quote.doctorNotes}</CardTitle>
             <CardDescription>{t.quote.doctorNotesHint}</CardDescription>
           </CardHeader>
           <CardContent className="whitespace-pre-wrap text-sm">{consult.notes}</CardContent>
@@ -122,7 +124,10 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
           </ul>
           <Separator />
           <div className="flex items-baseline justify-between">
-            <span className="font-medium">{t.quote.total}</span>
+            <span className="flex flex-col items-start gap-1">
+              <span className="font-medium">{t.quote.total}</span>
+              <Badge variant="doctor-confirmed">{common.doctorConfirmed}</Badge>
+            </span>
             {/* 시장 통화 참고가를 크게, 결제 통화 확정가를 병기 (ux-review A3) */}
             <span className="text-right">
               <span className="block text-2xl font-bold tabular-nums">{price.primary}</span>
@@ -146,7 +151,7 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {t.quote.booked} <Badge variant="secondary">{t.quote.bookedBadge}</Badge>
+              {t.quote.booked} <Badge variant="outline">{t.quote.bookedBadge}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -186,6 +191,7 @@ async function QuoteContent({ params }: { params: Promise<{ id: string }> }) {
           <CardContent className="py-4 text-sm text-muted-foreground">{t.quote.cannotBook}</CardContent>
         </Card>
       )}
+      <DisclaimerBar>{common.disclaimer}</DisclaimerBar>
     </>
   );
 }

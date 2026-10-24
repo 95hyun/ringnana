@@ -84,8 +84,8 @@ async function CheckinDetail({ params }: { params: Promise<{ followupId: string 
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline gap-3">
         <h1 className="text-xl font-bold">{fill(c.detailTitle, { name: patientName(consult.patients), n: f.due_day })}</h1>
-        {f.alert && <Badge variant="destructive">{c.alertSelf}</Badge>}
-        <Badge variant={f.status === "reviewed" ? "outline" : "secondary"}>
+        {f.alert && <Badge variant="flag-high">{c.alertSelf}</Badge>}
+        <Badge variant={f.status === "reviewed" ? "outline" : "hold"}>
           {f.status === "reviewed" ? c.status.reviewed : c.status.submitted}
         </Badge>
       </div>
@@ -105,7 +105,7 @@ async function CheckinDetail({ params }: { params: Promise<{ followupId: string 
             <div>
               <p className="font-medium">{c.symptomCheck}</p>
               {symptoms.length ? (
-                <ul className="list-inside list-disc text-destructive">
+                <ul className="list-inside list-disc text-warning-foreground">
                   {symptoms.map((s) => (
                     <li key={s}>{c.symptoms[s]}</li>
                   ))}

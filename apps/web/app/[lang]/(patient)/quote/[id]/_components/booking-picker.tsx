@@ -70,7 +70,8 @@ export function BookingPicker({
                 aria-pressed={on}
                 className={cn(
                   "flex flex-col items-start rounded-lg border px-3 py-2 text-left text-sm transition-colors disabled:opacity-40",
-                  on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
+                  // 선택 = 보더 primary 1.5px + primary-tint (design.md §5-4)
+                  on ? "border-[1.5px] border-primary bg-primary-tint" : "hover:bg-muted",
                 )}
               >
                 <span className="text-xs opacity-80">{fill(t.tripDay, { n: i + 1 })}</span>
@@ -83,7 +84,7 @@ export function BookingPicker({
             );
           })}
         </div>
-        {sessions > days.length && <p className="text-sm text-destructive">{t.tooManySessions}</p>}
+        {sessions > days.length && <p className="text-sm text-warning-foreground">{t.tooManySessions}</p>}
         <Button size="lg" className="w-full" disabled={!full || pending} onClick={submit}>
           {pending ? t.submitting : full ? t.submit : fill(t.remaining, { n: sessions - selected.length })}
         </Button>

@@ -71,10 +71,10 @@ async function AftercareList() {
       {due.map((f) => {
         const overdue = f.date < today;
         return (
-          <Card key={f.id} className={overdue ? "border-destructive bg-secondary" : "border-primary bg-secondary"}>
+          <Card key={f.id} className={overdue ? "border-warning-border bg-warning-tint" : "border-primary bg-primary-tint"}>
             <CardHeader>
               <CardTitle>{fill(t.aftercare.actionTitle, { n: f.dueDay })}</CardTitle>
-              <CardDescription className={overdue ? "font-medium text-destructive" : "font-medium text-primary"}>
+              <CardDescription className={overdue ? "font-medium text-warning-foreground" : "font-medium text-primary"}>
                 {overdue ? fill(t.aftercare.overdue, { date: formatDate(f.date, lang) }) : t.aftercare.dueToday}
               </CardDescription>
             </CardHeader>

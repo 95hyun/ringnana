@@ -66,7 +66,7 @@ async function CheckinTable() {
           const detail = href(lang, `/clinic/aftercare/${f.id}`);
           return (
             // 행 전체 클릭 = 이름 링크를 행 크기로 늘린다(tr은 a로 감쌀 수 없음)
-            <TableRow key={f.id} className={`relative cursor-pointer hover:bg-muted/50 ${highlight ? "bg-destructive/5" : ""}`}>
+            <TableRow key={f.id} className={`relative cursor-pointer hover:bg-muted/50 ${highlight ? "bg-warning-tint" : ""}`}>
               <TableCell className="font-medium">
                 <Link href={detail} className="after:absolute after:inset-0 hover:underline">
                   {patientName(f.bookings.quotes.consultations.patients)}
@@ -79,14 +79,14 @@ async function CheckinTable() {
               </TableCell>
               <TableCell>
                 {symptoms.length ? (
-                  <span className="text-destructive">{symptoms.map((s) => c.symptoms[s]).join(", ")}</span>
+                  <span className="text-warning-foreground">{symptoms.map((s) => c.symptoms[s]).join(", ")}</span>
                 ) : (
                   <span className="text-muted-foreground">{c.none}</span>
                 )}
               </TableCell>
               <TableCell>
                 <span className="flex items-center justify-between gap-2">
-                  <Badge variant={highlight ? "destructive" : f.status === "submitted" ? "secondary" : "outline"}>
+                  <Badge variant={highlight ? "flag-high" : f.status === "submitted" ? "hold" : "outline"}>
                     {highlight ? c.alertBadge : f.status === "submitted" ? c.status.submitted : c.status.reviewed}
                   </Badge>
                   <ChevronRight className="size-4 text-muted-foreground" aria-hidden />

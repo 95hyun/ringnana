@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { TriangleAlert } from "lucide-react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Badge } from "@/components/ui/badge";
@@ -95,7 +96,11 @@ async function CheckinContent({ params }: { params: Promise<{ followupId: string
             </div>
           )}
           {f.alert && f.status === "submitted" && (
-            <p className="rounded-lg bg-destructive/10 p-3 text-destructive">{t.checkin.alertNotice}</p>
+            // 응급 안내 = 앱에서 유일한 빨강 (design.md §5-7)
+            <p role="alert" className="flex items-start gap-3 rounded-lg bg-danger p-4 text-white">
+              <TriangleAlert className="size-6 shrink-0" aria-hidden />
+              <span>{t.checkin.alertNotice}</span>
+            </p>
           )}
         </CardContent>
       </Card>

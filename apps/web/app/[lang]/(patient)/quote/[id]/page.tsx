@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PatientStepper } from "@/components/shell/patient-stepper";
 import { Separator } from "@/components/ui/separator";
 import { href } from "@/lib/i18n";
 import { localized, treatmentName } from "@/lib/localize";
@@ -25,9 +26,10 @@ import { BookingPicker } from "./_components/booking-picker";
 
 // [id] = consultation_id — 화상 통화 직후 returnUrl로 돌아올 때는 견적이 아직 없을 수 있다
 export default async function QuotePage({ params }: PageProps<"/[lang]/quote/[id]">) {
-  const { t, common } = await h4Context();
+  const { lang, t, common } = await h4Context();
   return (
     <div className="flex flex-col gap-4">
+      <PatientStepper lang={lang} current="quote" />
       <h1 className="text-xl font-bold">{t.quote.title}</h1>
       <Suspense fallback={<p className="text-sm text-muted-foreground">{common.states.loading}</p>}>
         <QuoteContent params={params} />

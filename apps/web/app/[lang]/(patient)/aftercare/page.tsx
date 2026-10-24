@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
+import { PatientStepper } from "@/components/shell/patient-stepper";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,9 +14,10 @@ import { h4Context } from "../quote/_components/i18n";
 import { dueDate } from "./_components/checkin";
 
 export default async function AftercarePage() {
-  const { t, common } = await h4Context();
+  const { lang, t, common } = await h4Context();
   return (
     <div className="flex flex-col gap-4">
+      <PatientStepper lang={lang} current="aftercare" />
       <div>
         <h1 className="text-xl font-bold">{t.aftercare.title}</h1>
         <p className="text-sm text-muted-foreground">{t.aftercare.intro}</p>
@@ -68,7 +70,7 @@ async function AftercareList() {
       {due.map((f) => {
         const overdue = f.date < today;
         return (
-          <Card key={f.id} className={overdue ? "border-destructive" : "border-primary"}>
+          <Card key={f.id} className={overdue ? "border-destructive bg-secondary" : "border-primary bg-secondary"}>
             <CardHeader>
               <CardTitle>{fill(t.aftercare.actionTitle, { n: f.dueDay })}</CardTitle>
               <CardDescription className={overdue ? "font-medium text-destructive" : "font-medium text-primary"}>
